@@ -1,0 +1,18 @@
+# Environment variables
+.env
+
+# Local python environment
+.venv
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyc
+*/__pycache__
+
+#Alembic config files
+alembic.ini
+alembic_dev.ini
+alembic_test.ini
+alembic_staging.ini
+alembic_prod.ini
