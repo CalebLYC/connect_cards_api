@@ -1,7 +1,7 @@
 # app/schemas/permission_schema.py
 import datetime
 from pydantic import BaseModel, ConfigDict, Field
-from typing import List, Optional
+from typing import Optional
 from uuid import UUID
 
 

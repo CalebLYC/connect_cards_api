@@ -12,6 +12,7 @@ from app.controllers.auth import (
     role_controller,
     user_controller,
 )
+from app.controllers import identity_controller
 from app.core.config import Settings
 from app.providers.providers import get_settings
 
@@ -41,6 +42,7 @@ app.add_middleware(
 # Ajout des controllers/routers
 app.include_router(auth_controller.router)
 app.include_router(user_controller.router)
+app.include_router(identity_controller.router)
 # app.include_router(otp_controller.router)
 app.include_router(role_controller.router)
 app.include_router(permission_controller.router)  # Décommenter et ajouter cette ligne

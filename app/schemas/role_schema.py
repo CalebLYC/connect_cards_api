@@ -3,6 +3,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional
 from uuid import UUID
 
+from app.schemas.permission_schema import PermissionReadSchema
+
 
 class RoleCreateSchema(BaseModel):
     name: str = Field(example="user")
@@ -41,7 +43,7 @@ class RoleReadSchema(BaseModel):
     created_at: Optional[datetime.datetime] = Field(
         default=None, example="2025-01-01T00:00:00"
     )
-    permissions: List[str] = Field(default=[], example=["user:read"])
+    permissions: List[PermissionReadSchema] = Field(default_factory=list)
 
     model_config = ConfigDict(
         from_attributes=True,

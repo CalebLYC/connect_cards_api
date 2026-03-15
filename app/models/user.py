@@ -13,7 +13,6 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.models.base import Base
-from app.models.role import Role
 
 
 class SexEnum(str, Enum):
@@ -27,6 +26,14 @@ user_roles = Table(
     Base.metadata,
     Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True),
     Column("role_id", UUID(as_uuid=True), ForeignKey("roles.id"), primary_key=True),
+)
+
+# Table d'association User <-> Permission
+user_permissions = Table(
+    "user_permissions",
+    Base.metadata,
+    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True),
+    Column("permission_id", UUID(as_uuid=True), ForeignKey("permissions.id"), primary_key=True),
 )
 
 
@@ -52,6 +59,7 @@ class User(Base):
     birthday_date = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     roles = relationship("Role", secondary=user_roles, backref="users")
+    #permissions = relationship("Permission", secondary=user_permissions, backref="users")
 
     def has_role(self, role_name: str) -> bool:
         """Vérifie si l'utilisateur possède un rôle donné."""

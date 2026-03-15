@@ -1,6 +1,6 @@
 from typing import Optional, List
 from app.core.security import SecurityUtils
-from app.db.repositories.user_repository import UserRepository
+from app.repositories.user_repository import UserRepository
 from app.models.user import User
 from app.schemas.user_schema import UserCreateSchema, UserUpdateSchema, UserReadSchema
 from fastapi import HTTPException, status
@@ -86,8 +86,8 @@ class UserService:
         user_model = User(
             **user_create.model_dump(exclude=["password"]), password=hashed_pw
         )
-        user_id = await self.user_repos.create(user_model)
-        created = await self.user_repos.find_by_id(user_id)
+        db_user = await self.user_repos.create(user_model)
+        created = await self.user_repos.find_by_id(db_user.id)
         return UserReadSchema.model_validate(created)
 
     async def update_user(
@@ -121,13 +121,13 @@ class UserService:
             update_data["password"] = SecurityUtils.hash_password(
                 update_data.pop("password")
             )
+            
+        for key, value in update_data.items():
+            setattr(user, key, value)
 
-        success = await self.user_repos.update(user_id, update_data)
-        if not success:
-            raise HTTPException(status_code=500, detail="Update failed")
-
-        updated = await self.user_repos.find_by_id(user_id)
+        updated = await self.user_repos.update(user)
         return UserReadSchema.model_validate(updated)
+
 
     async def verify_user(self, user_id: str) -> UserReadSchema:
         """Verify a user's account.
@@ -148,11 +148,10 @@ class UserService:
 
         update_data = {"is_verified": True, "is_active": True}
 
-        success = await self.user_repos.update(user_id, update_data)
-        if not success:
-            raise HTTPException(status_code=500, detail="User verification failed")
+        for key, value in update_data.items():
+            setattr(user, key, value)
 
-        updated = await self.user_repos.find_by_id(user_id)
+        updated = await self.user_repos.update(user)
         return UserReadSchema.model_validate(updated)
 
     async def delete_user(self, user_id: str) -> None:
@@ -163,15 +162,8 @@ class UserService:
 
         Raises:
             HTTPException: 404 If the user is not found.
-            HTTPException: 500 If the delete operation fails.
-
-        Returns:
-           Bool: True if the user was successfully deleted, False otherwise.
         """
         user = await self.user_repos.find_by_id(user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        success = await self.user_repos.delete(user_id)
-        if not success:
-            raise HTTPException(status_code=500, detail="Delete failed")
-        return success
+        await self.user_repos.delete(user)

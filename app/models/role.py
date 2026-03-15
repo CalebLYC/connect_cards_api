@@ -1,6 +1,5 @@
 import datetime
 import uuid
-from enum import Enum
 from sqlalchemy import (
     Column,
     DateTime,
@@ -11,7 +10,6 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.models.base import Base
-from app.models.permission import Permission
 
 # Table d'association Role <-> Permission
 role_permissions = Table(

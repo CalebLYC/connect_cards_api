@@ -1,18 +1,18 @@
 from fastapi import Depends
-from app.core.config import Settings
-from app.db.repositories.access_token_repository import AccessTokenRepository
-from app.db.repositories.role_repository import RoleRepository
-from app.db.repositories.user_repository import UserRepository
-from app.db.repositories.permission_repository import PermissionRepository
-from app.models.permission import Permission
+from app.repositories.access_token_repository import AccessTokenRepository
+from app.repositories.identity_repository import IdentityRepository
+from app.repositories.role_repository import RoleRepository
+from app.repositories.user_repository import UserRepository
+from app.repositories.permission_repository import PermissionRepository
 
+from app.services.auth.identity_service import IdentityService
 from app.services.auth.permission_service import PermissionService
-from app.providers.providers import get_settings
 from app.providers.repository_providers import (
     get_access_token_repository,
     get_role_repository,
     get_user_repository,
     get_permission_repository,
+    get_identity_repository,
 )
 from app.services.auth.auth_service import AuthService
 from app.services.auth.role_service import RoleService
@@ -33,6 +33,12 @@ def get_user_service(
         UserService: _description_
     """
     return UserService(user_repos=user_repos)
+
+
+def get_identity_service(
+    identity_repos: IdentityRepository = Depends(get_identity_repository),
+) -> IdentityService:
+    return IdentityService(identity_repos=identity_repos)
 
 
 def get_auth_service(

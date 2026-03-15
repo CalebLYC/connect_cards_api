@@ -9,7 +9,6 @@ from app.schemas.permission_schema import (
 )
 from app.services.auth.permission_service import PermissionService
 from app.utils.constants import http_status
-from fastapi import HTTPException
 
 router = APIRouter(
     prefix="/permissions",

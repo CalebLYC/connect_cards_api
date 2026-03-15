@@ -2,7 +2,6 @@ import datetime
 from pydantic import BaseModel, ConfigDict, Field
 from uuid import UUID
 from typing import Optional
-from app.schemas.user_schema import UserReadSchema
 
 
 class AccessTokenBaseSchema(BaseModel):

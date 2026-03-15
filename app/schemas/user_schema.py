@@ -4,6 +4,8 @@ from typing import List, Optional
 from uuid import UUID
 
 from app.models.user import SexEnum
+from app.schemas.permission_schema import PermissionReadSchema
+from app.schemas.role_schema import RoleReadSchema
 
 
 class UserCreateSchema(BaseModel):
@@ -90,8 +92,8 @@ class UserReadSchema(BaseModel):
         default=None, example="https://example.com/picture.jpg"
     )
     locale: Optional[str] = Field(default=None, example="en-US")
-    roles: List[str] = Field(default=[], example=["user"])
-    permissions: List[str] = Field(default=[], example=["user:read"])
+    roles: List[RoleReadSchema] = Field(default_factory=list)
+    #permissions: List[PermissionReadSchema] = Field(default_factory=list)
 
     model_config = ConfigDict(
         from_attributes=True,

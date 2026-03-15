@@ -3,9 +3,10 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 
 from app.core.jwt import JWTUtils
-from app.db.repositories.user_repository import UserRepository
+from app.repositories.access_token_repository import AccessTokenRepository
+from app.repositories.user_repository import UserRepository
 from app.models.user import User
-from app.providers.repository_providers import get_user_repository
+from app.providers.repository_providers import get_access_token_repository, get_user_repository
 
 
 oauth_2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -13,7 +14,7 @@ oauth_2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 async def verify_token(
     token: str = Depends(oauth_2_scheme),
-    # access_token_repos: AccessTokenRepository = Depends(get_access_token_repository),
+    access_token_repos: AccessTokenRepository = Depends(get_access_token_repository),
 ) -> str:
     """Verify a token by decoding it and verify the existence of the user ID
 
@@ -28,6 +29,9 @@ async def verify_token(
         str: ID of the authenticated user
     """
     try:
+        db_token = await access_token_repos.find_by_token(token=token)
+        if not db_token:
+            raise HTTPException(status_code=401, detail="Invalid token")
         payload = JWTUtils.decode_access_token(token=token)
         if not payload:
             raise HTTPException(status_code=401, detail="Invalid token")

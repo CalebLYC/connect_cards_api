@@ -1,11 +1,11 @@
-import asyncio
 import datetime
 
 from fastapi import HTTPException, status
 from app.core.jwt import JWTUtils
 from app.core.security import SecurityUtils
-from app.db.repositories.access_token_repository import AccessTokenRepository
-from app.db.repositories.user_repository import UserRepository
+from app.models import user
+from app.repositories.access_token_repository import AccessTokenRepository
+from app.repositories.user_repository import UserRepository
 from app.models.access_token import AccessToken
 from app.schemas.access_token_schema import AccessTokenReadSchema
 from app.schemas.auth_schema import (
@@ -58,7 +58,8 @@ class AuthService:
             expires_at=expires_at,
             revoked=False,
         )
-        return await self.access_token_repos.create(access_token=token_doc)
+        db_token =await self.access_token_repos.create(access_token=token_doc)
+        return db_token.id
 
     async def revoke_access_token(self, token: str) -> bool:
         """Revoke an access token.
@@ -161,8 +162,8 @@ class AuthService:
             )
         )
         user_doc.password = hashed_password
-        inserted_id = await self.user_repos.create(user_doc)
-        db_user = await self.user_repos.find_by_id(id=inserted_id)
+        inserted_user = await self.user_repos.create(user_doc)
+        db_user = await self.user_repos.find_by_id(id=inserted_user.id)
         token_id = await self.generate_access_token(user_id=db_user.id)
         access_token = await self.access_token_repos.find_by_id(id=token_id)
         return_user = UserReadSchema.model_validate(db_user)
@@ -181,10 +182,7 @@ class AuthService:
         Returns:
             LoginResponseSchema: The login response containing the access token and user data.
         """
-        result = await self.access_token_repos.delete_by_user_id(user_id=user_id)
-        if not result:
-            raise HTTPException(status_code=404, detail="User not found")
-        return result
+        await self.access_token_repos.delete_by_user_id(user_id=user_id)
 
     async def update_user(
         self,
@@ -224,11 +222,11 @@ class AuthService:
             if logout:
                 await self.logout(user_id=user_id)
 
-        success = await self.user_repos.update(user_id, update_data)
-        if not success:
+        for key, value in update_data.items():
+            setattr(user, key, value)
+        updated = await self.user_repos.update(user)
+        if not updated:
             raise HTTPException(status_code=500, detail="Update failed")
-
-        updated = await self.user_repos.find_by_id(user_id)
         return UserReadSchema.model_validate(updated)
 
     async def change_password(
@@ -278,15 +276,17 @@ class AuthService:
             )
         )
 
-        success = await self.user_repos.update(user_id, final_update_data)
-        if not success:
+        for key, value in final_update_data.items():
+            setattr(user, key, value)
+        updated = await self.user_repos.update(user)
+        if not updated:
             raise HTTPException(status_code=500, detail="Update failed")
 
         if logout:
             await self.logout(user_id=user_id)
 
-        updated = await self.user_repos.find_by_id(user_id)
-        token_id = await self.generate_access_token(id=user_id)
+        #updated = await self.user_repos.find_by_id(user_id)
+        token_id = await self.generate_access_token(user_id=user_id)
         access_token = await self.access_token_repos.find_by_id(id=token_id)
         return_user = UserReadSchema.model_validate(updated)
         return LoginResponseSchema(access_token=access_token, user=return_user)

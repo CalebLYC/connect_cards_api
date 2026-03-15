@@ -91,7 +91,7 @@ async def get_user(
 @router.delete(
     "/logout", status_code=status.HTTP_204_NO_CONTENT, summary="Logout the current user"
 )
-async def delete_user(
+async def logout(
     service: AuthService = Depends(get_auth_service),
     current_user: UserReadSchema = Depends(auth_middleware),
 ):
@@ -105,11 +105,10 @@ async def delete_user(
         Bool: A confirmation message indicating the user was logged out.
     """
     await service.logout(user_id=current_user.id)
-    return {"detail": "User deleted"}
 
 
 @router.patch(
-    "/current/password/reset",
+    "/me/password/reset",
     response_model=LoginResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Reset a user password.",
@@ -133,7 +132,7 @@ async def reset_user_password(
 
 
 @router.put(
-    "/current/update", response_model=UserReadSchema, summary="Update the current user"
+    "/me/update", response_model=UserReadSchema, summary="Update the current user"
 )
 async def update_user(
     current_user: User = Depends(auth_middleware),
@@ -156,7 +155,7 @@ async def update_user(
 
 
 @router.patch(
-    "/current/password/update",
+    "/me/password/update",
     response_model=LoginResponseSchema,
     summary="Change the current user password",
 )

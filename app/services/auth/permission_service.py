@@ -1,7 +1,6 @@
 # app/services/auth/permission_service.py
 from typing import Optional, List
-from app.core.security import SecurityUtils
-from app.db.repositories.permission_repository import PermissionRepository
+from app.repositories.permission_repository import PermissionRepository
 from app.models.permission import Permission
 from fastapi import HTTPException, status
 
@@ -57,8 +56,7 @@ class PermissionService:
             raise HTTPException(status_code=400, detail="Permission already added")
 
         permission_model = Permission(**permission_create.model_dump(exclude=["id"]))
-        permission_id = await self.permission_repos.create(permission_model)
-        created = await self.permission_repos.find_by_id(permission_id)
+        created = await self.permission_repos.create(permission_model)
         return PermissionReadSchema.model_validate(created)
 
     async def update_permission(
@@ -75,11 +73,11 @@ class PermissionService:
             if existing and str(existing.id) != permission_id:
                 raise HTTPException(status_code=400, detail="Permission already added")
 
-        success = await self.permission_repos.update(permission_id, update_data)
-        if not success:
+        for key, value in update_data.items():
+            setattr(permission, key, value)
+        updated = await self.permission_repos.update(permission)
+        if not updated:
             raise HTTPException(status_code=500, detail="Update failed")
-
-        updated = await self.permission_repos.find_by_id(permission_id)
         return PermissionReadSchema.model_validate(updated)
 
     async def delete_permission(self, permission_id: str) -> None:
@@ -87,14 +85,8 @@ class PermissionService:
         permission = await self.permission_repos.find_by_id(permission_id)
         if not permission:
             raise HTTPException(status_code=404, detail="Permission not found")
-        success = await self.permission_repos.delete(permission_id)
-        if not success:
-            raise HTTPException(status_code=500, detail="Delete failed")
-        return success
+        await self.permission_repos.delete(permission)
 
     async def delete_all_permissions(self) -> None:
         """Delete all permissions."""
-        success = await self.permission_repos.delete_all()
-        if not success:
-            raise HTTPException(status_code=400, detail="Any permission to delete")
-        return success
+        await self.permission_repos.delete_all()

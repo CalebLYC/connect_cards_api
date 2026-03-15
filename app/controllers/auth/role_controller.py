@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, Query, Path, status
 from typing import List
-from app.providers.service_providers import get_role_service, get_role_service
+from app.providers.service_providers import get_role_service
 from app.schemas.role_schema import RoleCreateSchema, RoleReadSchema, RoleUpdateSchema
 from app.services.auth.role_service import RoleService
 from app.utils.constants import http_status
-from fastapi import HTTPException
 
 router = APIRouter(
     prefix="/roles",

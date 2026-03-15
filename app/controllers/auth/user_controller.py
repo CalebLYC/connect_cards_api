@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body, Depends, Query, Path, status
+from fastapi import APIRouter,  Depends, Query, Path, status
 from typing import List
 from app.models.user import User
 from app.providers.auth_provider import auth_middleware
@@ -6,8 +6,6 @@ from app.providers.service_providers import get_user_service
 from app.schemas.user_schema import UserCreateSchema, UserUpdateSchema, UserReadSchema
 from app.services.auth.user_service import UserService
 from app.utils.constants import http_status
-from app.models.role import Role
-from fastapi import HTTPException
 
 router = APIRouter(
     prefix="/users",
@@ -66,7 +64,7 @@ async def get_user(
     id: str = Path(..., min_length=24, max_length=36),
     service: UserService = Depends(get_user_service),
 ):
-    """Get a user by their ID.
+    """Get a user by its ID.
 
     Args:
         id (str, optional): The ID of the user to retrieve. Must be a valid length.
@@ -109,7 +107,7 @@ async def update_user(
     user_update: UserUpdateSchema = ...,
     service: UserService = Depends(get_user_service),
 ):
-    """Update a user by their ID.
+    """Update a user by its ID.
 
     Args:
         id (str, optional): The ID of the user to update. Must be a valid length.
@@ -129,7 +127,7 @@ async def delete_user(
     id: str = Path(..., min_length=24, max_length=36),
     service: UserService = Depends(get_user_service),
 ):
-    """Delete a user by their ID.
+    """Delete a user by its ID.
 
     Args:
         id (str, optional): The ID of the user to delete. Must be a valid length.

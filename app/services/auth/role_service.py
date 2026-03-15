@@ -1,6 +1,5 @@
 from typing import Optional, List
-from app.core.security import SecurityUtils
-from app.db.repositories.role_repository import RoleRepository
+from app.repositories.role_repository import RoleRepository
 from app.models.role import Role
 from fastapi import HTTPException, status
 
@@ -85,8 +84,7 @@ class RoleService:
             raise HTTPException(status_code=400, detail="Role already added")
 
         role_model = Role(**role_create.model_dump(exclude=["id"]))
-        role_id = await self.role_repos.create(role_model)
-        created = await self.role_repos.find_by_id(role_id)
+        created = await self.role_repos.create(role_model)
         return RoleReadSchema.model_validate(created)
 
     async def update_role(
@@ -116,11 +114,11 @@ class RoleService:
             if existing and str(existing.id) != role_id:
                 raise HTTPException(status_code=400, detail="Role already added")
 
-        success = await self.role_repos.update(role_id, update_data)
-        if not success:
+        for key, value in update_data.items():
+            setattr(role, key, value)
+        updated = await self.role_repos.update(role)
+        if not updated:
             raise HTTPException(status_code=500, detail="Update failed")
-
-        updated = await self.role_repos.find_by_id(role_id)
         return RoleReadSchema.model_validate(updated)
 
     async def delete_role(self, role_id: str) -> None:
@@ -139,10 +137,7 @@ class RoleService:
         role = await self.role_repos.find_by_id(role_id)
         if not role:
             raise HTTPException(status_code=404, detail="Role not found")
-        success = await self.role_repos.delete(role_id)
-        if not success:
-            raise HTTPException(status_code=500, detail="Delete failed")
-        return success
+        await self.role_repos.delete(role)
 
     async def delete_all_roles(self) -> None:
         """Delete all roles.
