@@ -1,6 +1,7 @@
 # app/controllers/auth/permission_controller.py
 from fastapi import APIRouter, Depends, Query, Path, status
 from typing import List
+from app.providers.auth_provider import require_role
 from app.providers.service_providers import get_permission_service
 from app.schemas.permission_schema import (
     PermissionCreateSchema,
@@ -13,7 +14,7 @@ from app.utils.constants import http_status
 router = APIRouter(
     prefix="/permissions",
     tags=["Permissions"],
-    dependencies=[],
+    dependencies=[require_role("admin")],
     responses=http_status.router_responses,
 )
 

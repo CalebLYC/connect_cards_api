@@ -1,7 +1,7 @@
 from fastapi import APIRouter,  Depends, Query, Path, status
 from typing import List
 from app.models.user import User
-from app.providers.auth_provider import auth_middleware
+from app.providers.auth_provider import auth_middleware, require_permission
 from app.providers.service_providers import get_user_service
 from app.schemas.user_schema import LazyUserReadSchema, UserCreateSchema, UserUpdateSchema, UserReadSchema
 from app.services.auth.user_service import UserService
@@ -10,7 +10,7 @@ from app.utils.constants import http_status
 router = APIRouter(
     prefix="/users",
     tags=["Users"],
-    dependencies=[],
+    dependencies=[require_permission("user:manage")],
     responses=http_status.router_responses,
 )
 

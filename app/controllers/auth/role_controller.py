@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query, Path, status
 from typing import List
-from app.providers.auth_provider import require_permission, require_role
+from app.providers.auth_provider import require_role
 from app.providers.service_providers import get_role_service
 from app.schemas.role_schema import LazyRoleReadSchema, RoleCreateSchema, RoleReadSchema, RoleUpdateSchema
 from app.services.auth.role_service import RoleService
@@ -9,7 +9,7 @@ from app.utils.constants import http_status
 router = APIRouter(
     prefix="/roles",
     tags=["Roles"],
-    dependencies=[],
+    dependencies=[require_role("superadmin")],
     responses=http_status.router_responses,
 )
 
@@ -18,7 +18,7 @@ router = APIRouter(
     "/",
     response_model=List[RoleReadSchema],
     summary="List roles",
-    dependencies=[require_role("admin")],
+    #dependencies=[require_role("admin")],
 )
 async def list_roles(
     skip: int = Query(0, ge=0),
@@ -43,7 +43,7 @@ async def list_roles(
 @router.get(
     "/{id}", response_model=RoleReadSchema,
     summary="Get a role by ID",
-    dependencies=[require_permission("user:read")],
+    #dependencies=[require_permission("user:read")],
 )
 async def get_role(
     id: str = Path(..., min_length=24, max_length=36),
