@@ -84,6 +84,10 @@ class User(Base):
         """Retourne la liste des noms de permissions de l'utilisateur."""
         return [permission.code for permission in [perm for role in self.roles for perm in role.permissions] + self.permissions]
 
+    def is_superuser(self) -> bool:
+        """Vérifie si l'utilisateur est un superutilisateur (possède tous les rôles et permissions)."""
+        return self.has_role("superadmin")
+    
 
     def __repr__(self):
         return f"<User id={self.id} email={self.email}>"

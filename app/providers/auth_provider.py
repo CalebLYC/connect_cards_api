@@ -91,6 +91,9 @@ def require_permission(permission_code: str) -> Depends:
             ps: UserService = Depends(get_user_service),
         ):
             try:
+                if user.is_superuser():
+                    return True
+                
                 await ps.ensure_permission(
                     user=user,
                     permission_code=permission_code,
@@ -121,6 +124,9 @@ def require_role(role_name: str) -> Depends:
             rs: UserService = Depends(get_user_service),
         ):
             try:
+                if user.is_superuser():
+                    return True
+                
                 await rs.ensure_role(
                     user=user, role_name=role_name
                 )

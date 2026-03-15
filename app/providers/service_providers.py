@@ -1,4 +1,6 @@
 from fastapi import Depends
+from app.core.config import Settings
+from app.providers.providers import get_settings
 from app.repositories.access_token_repository import AccessTokenRepository
 from app.repositories.identity_repository import IdentityRepository
 from app.repositories.role_repository import RoleRepository
@@ -17,6 +19,7 @@ from app.providers.repository_providers import (
 from app.services.auth.auth_service import AuthService
 from app.services.auth.role_service import RoleService
 from app.services.auth.user_service import UserService
+from app.services.setup_service import SetupService
 
 
 def get_user_service(
@@ -34,7 +37,11 @@ def get_user_service(
     Returns:
         UserService: _description_
     """
-    return UserService(user_repos=user_repos, role_repos=role_repos, permission_repos=permission_repos)
+    return UserService(
+        user_repos = user_repos,
+        role_repos = role_repos,
+        permission_repos = permission_repos
+    )
 
 
 def get_identity_service(
@@ -47,7 +54,10 @@ def get_auth_service(
     user_repos: UserRepository = Depends(get_user_repository),
     access_token_repos: AccessTokenRepository = Depends(get_access_token_repository),
 ) -> UserService:
-    return AuthService(user_repos=user_repos, access_token_repos=access_token_repos)
+    return AuthService(
+        user_repos = user_repos,
+        access_token_repos = access_token_repos
+    )
 
 
 def get_role_service(
@@ -56,8 +66,22 @@ def get_role_service(
 ) -> RoleService:
     return RoleService(role_repos=role_repos, permission_repos=permission_repos)
 
+
 # Ajouter à la fin du fichier existant
 def get_permission_service(
     permission_repos: PermissionRepository = Depends(get_permission_repository),
 ) -> PermissionService:
     return PermissionService(permission_repos=permission_repos)
+
+def get_setup_service(
+    user_repos: UserRepository = Depends(get_user_repository),
+    role_repos: RoleRepository = Depends(get_role_repository),
+    permission_repos: PermissionRepository = Depends(get_permission_repository),
+    settings: Settings = Depends(get_settings),
+) -> SetupService:
+    return SetupService(
+        user_repos = user_repos,
+        role_repos = role_repos,
+        permission_repos = permission_repos,
+        settings = settings
+    )
