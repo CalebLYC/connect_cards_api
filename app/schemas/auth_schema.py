@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.models.user import SexEnum
 from app.schemas.access_token_schema import AccessTokenReadSchema
-from app.schemas.user_schema import LazyUserReadSchema
+from app.schemas.user_schema import LazyUserReadSchema, UserReadSchema
 
 
 class LoginRequestSchema(BaseModel):
@@ -22,6 +22,14 @@ class LoginRequestSchema(BaseModel):
 
 
 class LoginResponseSchema(BaseModel):
+    user: UserReadSchema
+    access_token: AccessTokenReadSchema
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+    
+
+class LazyLoginResponseSchema(BaseModel):
     user: LazyUserReadSchema
     access_token: AccessTokenReadSchema
     model_config = ConfigDict(

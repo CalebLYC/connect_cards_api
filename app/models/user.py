@@ -58,8 +58,11 @@ class User(Base):
     locale = Column(String(20), nullable=True)
     birthday_date = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True)
+
     roles = relationship("Role", secondary=user_roles, backref="users")
-    #permissions = relationship("Permission", secondary=user_permissions, backref="users")
+    permissions = relationship("Permission", secondary=user_permissions, backref="users")
+    organization = relationship("Organization", back_populates="users")
 
     def has_role(self, role_name: str) -> bool:
         """Vérifie si l'utilisateur possède un rôle donné."""

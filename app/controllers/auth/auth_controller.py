@@ -5,10 +5,11 @@ from app.models.user import User
 from app.providers.service_providers import get_auth_service
 from app.schemas.auth_schema import (
     ChangeUserPasswordSchema,
+    LazyLoginResponseSchema,
     LoginRequestSchema,
     LoginResponseSchema,
     RegisterSchema,
-    ResetUserPasswordSchema,
+    #ResetUserPasswordSchema,
 )
 from app.schemas.user_schema import LazyUserReadSchema, UserReadSchema, UserUpdateSchema
 from app.services.auth.auth_service import AuthService
@@ -48,7 +49,7 @@ async def login(
 
 @router.post(
     "/register",
-    response_model=LoginResponseSchema,
+    response_model=LazyLoginResponseSchema,
     response_model_by_alias=True,
     status_code=status.HTTP_201_CREATED,
     response_description="Register user",
@@ -107,9 +108,9 @@ async def logout(
     await service.logout(user_id=current_user.id)
 
 
-@router.patch(
+"""@router.patch(
     "/me/password/reset",
-    response_model=LoginResponseSchema,
+    response_model=LazyLoginResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Reset a user password.",
 )
@@ -118,7 +119,7 @@ async def reset_user_password(
     service: AuthService = Depends(get_auth_service),
     logout: bool = False,
 ):
-    """Reset a user's password.
+    Reset a user's password.
 
     Args:
         user_request (ResetUserPasswordSchema): The password reset request data, validated against the ResetUserPasswordSchema.
@@ -127,8 +128,8 @@ async def reset_user_password(
 
     Returns:
         LoginResponseSchema: The login response data containing authentication tokens, validated against the LoginResponseSchema.
-    """
-    return await service.reset_user_password(user_request=user_request, logout=logout)
+    
+    return await service.reset_user_password(user_request=user_request, logout=logout)"""
 
 
 @router.put(
@@ -156,7 +157,7 @@ async def update_user(
 
 @router.patch(
     "/me/password/update",
-    response_model=LoginResponseSchema,
+    response_model=LazyLoginResponseSchema,
     summary="Change the current user password",
 )
 async def update_user_password(

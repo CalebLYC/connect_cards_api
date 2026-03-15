@@ -93,7 +93,8 @@ class UserReadSchema(BaseModel):
     )
     locale: Optional[str] = Field(default=None, example="en-US")
     roles: List[RoleReadSchema] = Field(default_factory=list)
-    #permissions: List[PermissionReadSchema] = Field(default_factory=list)
+    permissions: List[PermissionReadSchema] = Field(default_factory=list)
+    #organization: Optional[OrganizationReadSchema] = Field(default=None)
 
     model_config = ConfigDict(
         from_attributes=True,

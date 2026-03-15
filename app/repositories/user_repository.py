@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.role import Role
 from app.models.user import User
 
 
@@ -14,8 +15,8 @@ class UserRepository:
     async def find_by_id(self, id: str):
         stmt = (
             select(User)
-            .options(selectinload(User.roles))
-            #.options(selectinload(User.permissions))
+            .options(selectinload(User.roles).selectinload(Role.permissions))
+            .options(selectinload(User.permissions))
             .where(User.id == id)
         )
         result = await self.db.execute(stmt)
@@ -52,8 +53,8 @@ class UserRepository:
     ) -> List[User]:
         stmt = (
             select(User)
-            .options(selectinload(User.roles))
-            #.options(selectinload(User.permissions))
+            .options(selectinload(User.roles).selectinload(Role.permissions))
+            .options(selectinload(User.permissions))
         )
         
         if not all:

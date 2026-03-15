@@ -5,13 +5,21 @@ from sqlalchemy import pool
 
 from alembic import context
 
+from app.models.organization import Organization
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.user import User
 from app.models.access_token import AccessToken
-# Import another models
-# ...
+from app.models.identity import Identity
+from app.models.card import Card
+from app.models.membership import Membership
+from app.models.project import Project
+from app.models.event import Event
+from app.models.card_asssignement_history import CardAssignmentHistory
+from app.models.identity_project_permission import IdentityProjectPermission
+from app.models.reader import Reader
 from app.models.base import Base
+
 target_metadata = Base.metadata
 
 # this is the Alembic Config object, which provides

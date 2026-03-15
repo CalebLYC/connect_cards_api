@@ -3,13 +3,13 @@ import datetime
 from fastapi import HTTPException, status
 from app.core.jwt import JWTUtils
 from app.core.security import SecurityUtils
-from app.models import user
 from app.repositories.access_token_repository import AccessTokenRepository
 from app.repositories.user_repository import UserRepository
 from app.models.access_token import AccessToken
 from app.schemas.access_token_schema import AccessTokenReadSchema
 from app.schemas.auth_schema import (
     ChangeUserPasswordSchema,
+    LazyLoginResponseSchema,
     LoginRequestSchema,
     LoginResponseSchema,
     RegisterSchema,
@@ -129,7 +129,7 @@ class AuthService:
         return_access_token = AccessTokenReadSchema.model_validate(access_token)
         return LoginResponseSchema(access_token=return_access_token, user=return_user)
 
-    async def register(self, user: RegisterSchema) -> LoginResponseSchema:
+    async def register(self, user: RegisterSchema) -> LazyLoginResponseSchema:
         """Register a new user and return an access token.
 
         Args:
@@ -139,7 +139,7 @@ class AuthService:
             HTTPException: 400 If the email is already registered.
 
         Returns:
-            LoginResponseSchema: The login response containing the access token and user data.
+            LazyLoginResponseSchema: The login response containing the access token and user data.
         """
         if user.password_confirmation:
             if user.password != user.password_confirmation:
@@ -167,9 +167,9 @@ class AuthService:
         token_id = await self.generate_access_token(user_id=db_user.id)
         access_token = await self.access_token_repos.find_by_id(id=token_id)
         return_user = LazyUserReadSchema.model_validate(db_user)
-        return LoginResponseSchema(access_token=access_token, user=return_user)
+        return LazyLoginResponseSchema(access_token=access_token, user=return_user)
 
-    async def logout(self, user_id: str) -> LoginResponseSchema:
+    async def logout(self, user_id: str) -> None:
         """Logout a user by deleting their access token.
 
         Args:
@@ -234,7 +234,7 @@ class AuthService:
         user: User,
         user_update: ChangeUserPasswordSchema,
         logout: bool = True,
-    ) -> LoginResponseSchema:
+    ) -> LazyLoginResponseSchema:
         """Change a user's password.
 
         Args:
@@ -249,7 +249,7 @@ class AuthService:
             HTTPException: 500 If the update operation fails.
 
         Returns:
-            LoginResponseSchema: The updated user data after changing the password.
+            LazyLoginResponseSchema: The updated user data after changing the password.
         """
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
@@ -289,7 +289,7 @@ class AuthService:
         token_id = await self.generate_access_token(user_id=user_id)
         access_token = await self.access_token_repos.find_by_id(id=token_id)
         return_user = LazyUserReadSchema.model_validate(updated)
-        return LoginResponseSchema(access_token=access_token, user=return_user)
+        return LazyLoginResponseSchema(access_token=access_token, user=return_user)
 
     def generate_random_password(self, length: int = 12) -> str:
         """Generate a random password.

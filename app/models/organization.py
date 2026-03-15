@@ -23,3 +23,4 @@ class Organization(Base):
     memberships = relationship("Membership", back_populates="organization")
     projects = relationship("Project", back_populates="organization")
     readers = relationship("Reader", back_populates="organization")
+    users = relationship("User", back_populates="organization")
