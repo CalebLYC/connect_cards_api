@@ -33,7 +33,10 @@ class RoleRepository:
         limit: Optional[int] = 100,
         all: bool = False,
     ) -> List[Role]:
-        stmt = select(Role)
+        stmt = (
+            select(Role)
+            .options(selectinload(Role.permissions))
+        )
 
         if not all:
             stmt = stmt.offset(skip).limit(limit)

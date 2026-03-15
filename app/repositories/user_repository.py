@@ -25,7 +25,7 @@ class UserRepository:
     async def find_by_email(self, email: str) -> Optional[User]:
         stmt = (
             select(User)
-            .options(selectinload(User.roles))
+            #.options(selectinload(User.roles))
             #.options(selectinload(User.permissions))
             .where(User.email == email)
         )

@@ -10,7 +10,7 @@ from app.schemas.auth_schema import (
     RegisterSchema,
     ResetUserPasswordSchema,
 )
-from app.schemas.user_schema import UserReadSchema, UserUpdateSchema
+from app.schemas.user_schema import LazyUserReadSchema, UserReadSchema, UserUpdateSchema
 from app.services.auth.auth_service import AuthService
 from app.utils.constants import http_status
 
@@ -132,7 +132,7 @@ async def reset_user_password(
 
 
 @router.put(
-    "/me/update", response_model=UserReadSchema, summary="Update the current user"
+    "/me/update", response_model=LazyUserReadSchema, summary="Update the current user"
 )
 async def update_user(
     current_user: User = Depends(auth_middleware),

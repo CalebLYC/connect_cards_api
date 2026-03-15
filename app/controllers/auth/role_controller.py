@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, Path, status
 from typing import List
 from app.providers.service_providers import get_role_service
-from app.schemas.role_schema import RoleCreateSchema, RoleReadSchema, RoleUpdateSchema
+from app.schemas.role_schema import LazyRoleReadSchema, RoleCreateSchema, RoleReadSchema, RoleUpdateSchema
 from app.services.auth.role_service import RoleService
 from app.utils.constants import http_status
 
@@ -60,7 +60,7 @@ async def get_role(
 
 @router.post(
     "/",
-    response_model=RoleReadSchema,
+    response_model=LazyRoleReadSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new role",
 )
@@ -80,7 +80,7 @@ async def create_role(
     return await service.create_role(role_create)
 
 
-@router.put("/{id}", response_model=RoleReadSchema, summary="Update a role by ID")
+@router.put("/{id}", response_model=LazyRoleReadSchema, summary="Update a role by ID")
 async def update_role(
     id: str = Path(..., min_length=24, max_length=36),
     role_update: RoleUpdateSchema = ...,
@@ -132,4 +132,3 @@ async def delete_all_roles(
         Bool: A confirmation message indicating all roles were deleted.
     """
     await service.delete_all_roles()
-    return {"detail": "Role deleted"}

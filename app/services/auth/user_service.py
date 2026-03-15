@@ -2,7 +2,7 @@ from typing import Optional, List
 from app.core.security import SecurityUtils
 from app.repositories.user_repository import UserRepository
 from app.models.user import User
-from app.schemas.user_schema import UserCreateSchema, UserUpdateSchema, UserReadSchema
+from app.schemas.user_schema import LazyUserReadSchema, UserCreateSchema, UserUpdateSchema, UserReadSchema
 from fastapi import HTTPException, status
 
 
@@ -66,7 +66,7 @@ class UserService:
         users = await self.user_repos.list_users(skip=skip, limit=limit, all=all)
         return [UserReadSchema.model_validate(u) for u in users]
 
-    async def create_user(self, user_create: UserCreateSchema) -> UserReadSchema:
+    async def create_user(self, user_create: UserCreateSchema) -> LazyUserReadSchema:
         """Create a new user.
 
         Args:
@@ -76,7 +76,7 @@ class UserService:
             HTTPException: 400 If the email is already registered.
 
         Returns:
-            UserReadSchema: The created user data.
+            LazyUserReadSchema: The created user data.
         """
         existing = await self.user_repos.find_by_email(user_create.email)
         if existing:
@@ -86,13 +86,12 @@ class UserService:
         user_model = User(
             **user_create.model_dump(exclude=["password"]), password=hashed_pw
         )
-        db_user = await self.user_repos.create(user_model)
-        created = await self.user_repos.find_by_id(db_user.id)
-        return UserReadSchema.model_validate(created)
+        created = await self.user_repos.create(user_model)
+        return LazyUserReadSchema.model_validate(created)
 
     async def update_user(
         self, user_id: str, user_update: UserUpdateSchema
-    ) -> UserReadSchema:
+    ) -> LazyUserReadSchema:
         """Update an existing user.
 
         Args:
@@ -105,7 +104,7 @@ class UserService:
             HTTPException: 500 Internal Server Error if the update fails.
 
         Returns:
-            UserReadSchema: _description_
+            LazyUserReadSchema: The updated user data.
         """
         user = await self.user_repos.find_by_id(user_id)
         if not user:
@@ -124,7 +123,6 @@ class UserService:
             
         for key, value in update_data.items():
             setattr(user, key, value)
-
         updated = await self.user_repos.update(user)
         return UserReadSchema.model_validate(updated)
 

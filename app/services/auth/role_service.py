@@ -3,8 +3,7 @@ from app.repositories.role_repository import RoleRepository
 from app.models.role import Role
 from fastapi import HTTPException, status
 
-from app.schemas.role_schema import RoleCreateSchema, RoleReadSchema, RoleUpdateSchema
-
+from app.schemas.role_schema import RoleCreateSchema, RoleReadSchema, RoleUpdateSchema, LazyRoleReadSchema
 
 class RoleService:
     def __init__(
@@ -67,7 +66,7 @@ class RoleService:
         roles = await self.role_repos.list_roles(skip=skip, limit=limit, all=all)
         return [RoleReadSchema.model_validate(r) for r in roles]
 
-    async def create_role(self, role_create: RoleCreateSchema) -> RoleReadSchema:
+    async def create_role(self, role_create: RoleCreateSchema) -> LazyRoleReadSchema:
         """Create a new role.
 
         Args:
@@ -77,7 +76,7 @@ class RoleService:
             HTTPException: 400 If the role already exists.
 
         Returns:
-            RoleReadSchema: The created role data.
+            LazyRoleReadSchema: The created role data.
         """
         existing = await self.role_repos.find_by_name(role_create.name)
         if existing:
@@ -85,11 +84,11 @@ class RoleService:
 
         role_model = Role(**role_create.model_dump(exclude=["id"]))
         created = await self.role_repos.create(role_model)
-        return RoleReadSchema.model_validate(created)
+        return LazyRoleReadSchema.model_validate(created)
 
     async def update_role(
         self, role_id: str, role_update: RoleUpdateSchema
-    ) -> RoleReadSchema:
+    ) -> LazyRoleReadSchema:
         """Update an existing role.
 
         Args:
@@ -102,7 +101,7 @@ class RoleService:
             HTTPException: 500 If the update operation fails.
 
         Returns:
-            RoleReadSchema: The updated role data.
+            LazyRoleReadSchema: The updated role data.
         """
         role = await self.role_repos.find_by_id(role_id)
         if not role:
@@ -148,7 +147,4 @@ class RoleService:
         Returns:
             Bool: True if all roles were successfully deleted, otherwise False.
         """
-        success = await self.role_repos.delete_all()
-        if not success:
-            raise HTTPException(status_code=400, detail="Any role to delete")
-        return success
+        await self.role_repos.delete_all()

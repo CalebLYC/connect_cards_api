@@ -15,7 +15,7 @@ from app.schemas.auth_schema import (
     RegisterSchema,
 )
 from app.models.user import User
-from app.schemas.user_schema import UserReadSchema, UserUpdateSchema
+from app.schemas.user_schema import LazyUserReadSchema, UserReadSchema, UserUpdateSchema
 
 
 class AuthService:
@@ -125,7 +125,7 @@ class AuthService:
             raise HTTPException(status_code=401, detail="Wrong credentials")
         token_id = await self.generate_access_token(user_id=db_user.id)
         access_token = await self.access_token_repos.find_by_id(id=token_id)
-        return_user = UserReadSchema.model_validate(db_user)
+        return_user = LazyUserReadSchema.model_validate(db_user)
         return_access_token = AccessTokenReadSchema.model_validate(access_token)
         return LoginResponseSchema(access_token=return_access_token, user=return_user)
 
@@ -166,7 +166,7 @@ class AuthService:
         db_user = await self.user_repos.find_by_id(id=inserted_user.id)
         token_id = await self.generate_access_token(user_id=db_user.id)
         access_token = await self.access_token_repos.find_by_id(id=token_id)
-        return_user = UserReadSchema.model_validate(db_user)
+        return_user = LazyUserReadSchema.model_validate(db_user)
         return LoginResponseSchema(access_token=access_token, user=return_user)
 
     async def logout(self, user_id: str) -> LoginResponseSchema:
@@ -189,7 +189,7 @@ class AuthService:
         user: User,
         user_update: UserUpdateSchema,
         logout: bool = False,
-    ) -> UserReadSchema:
+    ) -> LazyUserReadSchema:
         """Update a user's information.
 
         Args:
@@ -203,7 +203,7 @@ class AuthService:
             HTTPException: 500 If the update operation fails.
 
         Returns:
-            UserReadSchema: The updated user data.
+            LazyUserReadSchema: The updated user data.
         """
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
@@ -234,7 +234,7 @@ class AuthService:
         user: User,
         user_update: ChangeUserPasswordSchema,
         logout: bool = True,
-    ) -> UserReadSchema:
+    ) -> LoginResponseSchema:
         """Change a user's password.
 
         Args:
@@ -249,7 +249,7 @@ class AuthService:
             HTTPException: 500 If the update operation fails.
 
         Returns:
-            UserReadSchema: The updated user data after changing the password.
+            LoginResponseSchema: The updated user data after changing the password.
         """
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
@@ -288,7 +288,7 @@ class AuthService:
         #updated = await self.user_repos.find_by_id(user_id)
         token_id = await self.generate_access_token(user_id=user_id)
         access_token = await self.access_token_repos.find_by_id(id=token_id)
-        return_user = UserReadSchema.model_validate(updated)
+        return_user = LazyUserReadSchema.model_validate(updated)
         return LoginResponseSchema(access_token=access_token, user=return_user)
 
     def generate_random_password(self, length: int = 12) -> str:
