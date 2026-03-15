@@ -132,3 +132,49 @@ async def delete_all_roles(
         Bool: A confirmation message indicating all roles were deleted.
     """
     await service.delete_all_roles()
+    
+    
+@router.patch(
+    "/{id}/permissions",
+    response_model=RoleReadSchema,
+    summary="Add permissions to a role",
+)
+async def add_permissions_to_role(
+    id: str = Path(..., min_length=24, max_length=36),
+    permissions_to_add: List[str] = ...,
+    service: RoleService = Depends(get_role_service),
+):
+    """Add permissions to a role.
+
+    Args:
+        id (str, optional): The ID of the role to update. Must be a valid length.
+        permissions_to_add (List[str], optional): A list of permission codes to add.
+        service (RoleService, optional): Role service dependency.
+
+    Returns:
+        RoleReadSchema: The updated role's data validated against the RoleReadSchema.
+    """
+    return await service.add_permissions_to_role(id, permissions_to_add)
+
+
+@router.patch(
+    "/{id}/permissions/remove",
+    response_model=RoleReadSchema,
+    summary="Remove permissions from a role",
+)
+async def remove_permissions_from_role(
+    id: str = Path(..., min_length=24, max_length=36),
+    permissions_to_remove: List[str] = ...,
+    service: RoleService = Depends(get_role_service),
+):
+    """Remove permissions from a role.
+
+    Args:
+        id (str, optional): The ID of the role to update. Must be a valid length.
+        permissions_to_remove (List[str], optional): A list of permission codes to remove.
+        service (RoleService, optional): Role service dependency.
+
+    Returns:
+        RoleReadSchema: The updated role's data validated against the RoleReadSchema.
+    """
+    return await service.remove_permissions_from_role(id, permissions_to_remove)

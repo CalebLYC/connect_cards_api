@@ -1,4 +1,5 @@
 from typing import Optional, List
+from app.repositories.permission_repository import PermissionRepository
 from app.repositories.role_repository import RoleRepository
 from app.models.role import Role
 from fastapi import HTTPException, status
@@ -9,8 +10,11 @@ class RoleService:
     def __init__(
         self,
         role_repos: RoleRepository,
+        permission_repos: PermissionRepository,
     ):
         self.role_repos = role_repos
+        self.permission_repos = permission_repos
+
 
     async def get_role(self, role_id: str) -> Optional[RoleReadSchema]:
         """Retrieve a role by its ID.
@@ -148,3 +152,88 @@ class RoleService:
             Bool: True if all roles were successfully deleted, otherwise False.
         """
         await self.role_repos.delete_all()
+
+
+    async def add_permissions_to_role(
+        self, role_id: str, permissions_to_add: List[str]
+    ) -> RoleReadSchema:
+        """
+        Assigns new permissions to an existing role.
+
+        Args:
+            role_id (str): The id of the role to update.
+            permissions_to_add (List[str]): A list of permission codes to add.
+
+        Returns:
+            RoleReadSchema: The updated role.
+
+        Raises:
+            HTTPException: If the role is not found or any permission is invalid.
+        """
+        # Récupérer le rôle
+        role = await self.role_repos.find_by_id(id=role_id)
+        if not role:
+            raise HTTPException(status_code=404, detail=f"Role '{role_id}' not found.")
+
+        # Valider si toutes les permissions à ajouter existent
+        existing_permissions = await self.permission_repos.find_many_by_ids(ids=permissions_to_add)
+        #print(f"Existing permissions: {list(existing_permissions)}")
+        existing_permission_ids = {str(p.id) for p in existing_permissions}
+        #print(f"Existing permission ids: {list(existing_permission_ids)}")
+        
+        invalid_permissions = [perm_id for perm_id in permissions_to_add if perm_id not in existing_permission_ids]
+        if invalid_permissions:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Permissions not found: {', '.join(invalid_permissions)}. Please create them first.",
+            )
+
+        # Ajouter les permissions à la relation
+        for permission in existing_permissions:
+            if permission not in role.permissions:
+                role.permissions.append(permission)
+
+        # Mettre à jour le rôle dans la base de données
+        updated = await self.role_repos.update(role)
+        if not updated:
+            raise HTTPException(status_code=500, detail="Failed to update role permissions.")
+
+        # Retourner le rôle mis à jour
+        return RoleReadSchema.model_validate(role)
+    
+    
+    async def remove_permissions_from_role(
+        self, role_id: str, permissions_to_remove: List[str]
+    ) -> RoleReadSchema:
+        """
+        Removes specified permissions from an existing role.
+
+        Args:
+            role_id (str): The ID of the role to update.
+            permissions_to_remove (List[str]): A list of permission codes to remove.
+
+        Returns:
+            RoleReadSchema: The updated role.
+
+        Raises:
+            HTTPException: If the role is not found or any permission is invalid.
+        """
+        # Récupérer le rôle
+        role = await self.role_repos.find_by_id(id=role_id)
+        if not role:
+            raise HTTPException(status_code=404, detail=f"Role '{role_id}' not found.")
+        
+        # Retirer les permissions de la relation
+        role_permission_ids = {str(p.id) for p in role.permissions}
+        for permission_id in permissions_to_remove:
+            if permission_id in role_permission_ids:
+                role.permissions.remove(next(p for p in role.permissions if str(p.id) == permission_id))
+
+        # Mettre à jour le rôle dans la base de données
+        updated = await self.role_repos.update(role)
+        if not updated:
+            raise HTTPException(status_code=500, detail="Failed to update role permissions.")
+
+        # Retourner le rôle mis à jour
+        return RoleReadSchema.model_validate(role)
+

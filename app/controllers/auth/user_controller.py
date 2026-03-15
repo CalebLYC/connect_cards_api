@@ -138,3 +138,95 @@ async def delete_user(
     """
     await service.delete_user(id)
     return {"detail": "User deleted"}
+
+
+@router.patch(
+    "/{id}/roles",
+    response_model=UserReadSchema,
+    summary="Add roles to a user",
+)
+async def add_roles_to_user(
+    id: str = Path(..., min_length=24, max_length=36),
+    roles_to_add: List[str] = ...,
+    service: UserService = Depends(get_user_service),
+):
+    """Add roles to a user.
+
+    Args:
+        id (str, optional): The ID of the user to update. Must be a valid length.
+        roles_to_add (List[str], optional): A list of role codes to add.
+        service (UserService, optional): User service dependency.
+
+    Returns:
+        UserReadSchema: The updated user's data validated against the UserReadSchema.
+    """
+    return await service.add_roles_to_user(id, roles_to_add)
+
+
+@router.patch(
+    "/{id}/roles/remove",
+    response_model=UserReadSchema,
+    summary="Remove roles from a user",
+)
+async def remove_roles_from_user(
+    id: str = Path(..., min_length=24, max_length=36),
+    roles_to_remove: List[str] = ...,
+    service: UserService = Depends(get_user_service),
+):
+    """Remove roles from a user.
+
+    Args:
+        id (str, optional): The ID of the user to update. Must be a valid length.
+        roles_to_remove (List[str], optional): A list of role codes to remove.
+        service (UserService, optional): User service dependency.
+
+    Returns:
+        UserReadSchema: The updated user's data validated against the UserReadSchema.
+    """
+    return await service.remove_roles_from_user(id, roles_to_remove)
+
+
+@router.patch(
+    "/{id}/permissions",
+    response_model=UserReadSchema,
+    summary="Add permissions to a user",
+)
+async def add_permissions_to_user(
+    id: str = Path(..., min_length=24, max_length=36),
+    permissions_to_add: List[str] = ...,
+    service: UserService = Depends(get_user_service),
+):
+    """Add permissions to a user.
+
+    Args:
+        id (str, optional): The ID of the user to update. Must be a valid length.
+        permissions_to_add (List[str], optional): A list of permission codes to add.
+        service (UserService, optional): User service dependency.
+
+    Returns:
+        UserReadSchema: The updated user's data validated against the UserReadSchema.
+    """
+    return await service.add_permissions_to_user(id, permissions_to_add)
+
+
+@router.patch(
+    "/{id}/permissions/remove",
+    response_model=UserReadSchema,
+    summary="Remove permissions from a user",
+)
+async def remove_permissions_from_user(
+    id: str = Path(..., min_length=24, max_length=36),
+    permissions_to_remove: List[str] = ...,
+    service: UserService = Depends(get_user_service),
+):
+    """Remove permissions from a user.
+
+    Args:
+        id (str, optional): The ID of the user to update. Must be a valid length.
+        permissions_to_remove (List[str], optional): A list of permission codes to remove.
+        service (UserService, optional): User service dependency.
+
+    Returns:
+        UserReadSchema: The updated user's data validated against the UserReadSchema.
+    """
+    return await service.remove_permissions_from_user(id, permissions_to_remove)

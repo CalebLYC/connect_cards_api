@@ -21,6 +21,8 @@ from app.services.auth.user_service import UserService
 
 def get_user_service(
     user_repos: UserRepository = Depends(get_user_repository),
+    role_repos: RoleRepository = Depends(get_role_repository),
+    permission_repos: PermissionRepository = Depends(get_permission_repository),
 ) -> UserService:
     """Provides user service
 
@@ -32,7 +34,7 @@ def get_user_service(
     Returns:
         UserService: _description_
     """
-    return UserService(user_repos=user_repos)
+    return UserService(user_repos=user_repos, role_repos=role_repos, permission_repos=permission_repos)
 
 
 def get_identity_service(
@@ -50,8 +52,9 @@ def get_auth_service(
 
 def get_role_service(
     role_repos: RoleRepository = Depends(get_role_repository),
+    permission_repos: PermissionRepository = Depends(get_permission_repository),
 ) -> RoleService:
-    return RoleService(role_repos=role_repos)
+    return RoleService(role_repos=role_repos, permission_repos=permission_repos)
 
 # Ajouter à la fin du fichier existant
 def get_permission_service(
