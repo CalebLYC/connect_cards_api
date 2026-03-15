@@ -28,3 +28,22 @@ async def create_superadmin(
     Returns:
         dict: Success message."""
     return await service.setup_superadmin()
+
+
+@router.post(
+    "/roles-and-permissions",
+    response_model=dict,
+    summary="Create roles and permissions",
+)
+async def create_roles_and_permissions(
+    service: SetupService = Depends(get_setup_service),
+):
+   
+    """Set up roles and permissions.
+
+    Args:
+        service (SetupService, optional): Setup service dependency.
+
+    Returns:
+        dict: Success message."""
+    return await service.setup_roles_and_permissions()

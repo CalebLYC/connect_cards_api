@@ -34,6 +34,17 @@ class UserRepository:
         return result.scalar_one_or_none()
     
     
+    async def find_by_email_with_roles_and_permissions(self, email: str) -> Optional[User]:
+        stmt = (
+            select(User)
+            .options(selectinload(User.roles).selectinload(Role.permissions))
+            .options(selectinload(User.permissions))
+            .where(User.email == email)
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+    
+    
     async def find_by_phone_number(self, phone_number: str) -> Optional[User]:
         stmt = (
             select(User)

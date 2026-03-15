@@ -3,6 +3,7 @@ from starlette.exceptions import HTTPException
 from app.core.config import Settings
 from app.core.security import SecurityUtils
 #from app.models.permission import Permission
+from app.models.permission import Permission
 from app.models.role import Role
 from app.models.user import User
 from app.providers.providers import get_settings
@@ -74,3 +75,35 @@ class SetupService:
         await self.user_repos.update(user)
         
         return {"message": "Superadmin user setup successfully."}
+    
+    
+    async def setup_roles_and_permissions(self) -> dict:
+        """Set up roles and permissions.
+            Args:
+                None
+            Returns:
+                dict: Success message.
+        """
+        # Create default roles if they don't exist
+        roles = [
+            {"name": "superadmin", "description": "Superadmin role with all permissions"},
+            {"name": "admin", "description": "Admin role with elevated permissions"},
+            {"name": "user", "description": "Regular user role with limited permissions"},
+        ]
+        for role_data in roles:
+            role = await self.role_repos.find_by_name(role_data["name"])
+            if not role:
+                await self.role_repos.create(Role(**role_data))
+
+        # Create default permissions if they don't exist
+        permissions = [
+            {"code": "roles:manage", "description": "Permission to manage roles"},
+            {"code": "admin:manage", "description": "Permission to manage admin users"},
+            {"code": "user:manage", "description": "Permission to manage regular users"},
+        ]
+        for permission_data in permissions:
+            permission = await self.permission_repos.find_by_code(permission_data["code"])
+            if not permission:
+                await self.permission_repos.create(Permission(**permission_data))
+
+        return {"message": "Roles and permissions setup successfully."}

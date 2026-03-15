@@ -115,7 +115,7 @@ class AuthService:
         Returns:
             LoginResponseSchema: The login response containing the access token and user data.
         """
-        db_user = await self.user_repos.find_by_email(email=user.email)
+        db_user = await self.user_repos.find_by_email_with_roles_and_permissions(email=user.email)
         if not db_user:
             raise HTTPException(status_code=404, detail="Wrong credentials")
         is_auth = SecurityUtils.verify_password(
@@ -125,7 +125,7 @@ class AuthService:
             raise HTTPException(status_code=401, detail="Wrong credentials")
         token_id = await self.generate_access_token(user_id=db_user.id)
         access_token = await self.access_token_repos.find_by_id(id=token_id)
-        return_user = LazyUserReadSchema.model_validate(db_user)
+        return_user = UserReadSchema.model_validate(db_user)
         return_access_token = AccessTokenReadSchema.model_validate(access_token)
         return LoginResponseSchema(access_token=return_access_token, user=return_user)
 
