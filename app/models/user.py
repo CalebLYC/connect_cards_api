@@ -71,6 +71,19 @@ class User(Base):
     def get_roles(self) -> list:
         """Retourne la liste des noms de rôles de l'utilisateur."""
         return [role.name for role in self.roles]
+    
+    def has_permission(self, permission_code: str) -> bool:
+        """Vérifie si l'utilisateur possède une permission donnée."""
+        return any(p_code == permission_code for p_code in self.get_all_permissions())
+
+    def get_permissions(self) -> list:
+        """Retourne la liste des noms de permissions de l'utilisateur."""
+        return [permission.code for permission in self.permissions]
+    
+    def get_all_permissions(self) -> list:
+        """Retourne la liste des noms de permissions de l'utilisateur."""
+        return [permission.code for permission in [perm for role in self.roles for perm in role.permissions] + self.permissions]
+
 
     def __repr__(self):
         return f"<User id={self.id} email={self.email}>"

@@ -341,3 +341,78 @@ class UserService:
         # Retourner l'utilisateur mis à jour
         return UserReadSchema.model_validate(user)
 
+
+    """async def get_all_roles(self, user: User) -> set[str]:
+        # 1. Roles directes
+        roles = set(user.roles)
+
+        # 2. Roles hérités
+        seen = set()
+        to_visit = list(user.roles)
+
+        while to_visit:
+            role_name = to_visit.pop()
+            if role_name in seen:
+                continue
+            seen.add(role_name)
+
+            role = await self.role_repos.find_by_name(role_name)
+            if not role:
+                continue
+
+            roles.update(role.inherited_roles)
+            to_visit.extend(role.inherited_roles)
+
+        return roles
+        
+
+    async def has_role(self, user: User, role_name: str) -> bool:
+        return role_name in user.roles"""
+
+
+    async def ensure_role(self, user: User, role_name: str) -> bool:
+        db_role = await self.role_repos.find_by_name(name=role_name)
+        if not db_role:
+            raise HTTPException(status_code=500, detail="Unkown role")
+        if not user.has_role(role_name):
+            raise HTTPException(status_code=403, detail="Unauthorized")
+        return True
+    
+    
+    """async def get_all_permissions(self, user: User) -> set[str]:
+        # 1. Permissions directes
+        perms = set(user.permissions)
+
+        # 2. Permissions des rôles + hérités
+        seen = set()
+        to_visit = list(user.roles)
+
+        while to_visit:
+            role_name = to_visit.pop()
+            if role_name in seen:
+                continue
+            seen.add(role_name)
+
+            role = await self.role_repos.find_by_name(role_name)
+            if not role:
+                continue
+
+            perms.update(role.permissions)
+            #to_visit.extend(role.inherited_roles)
+
+        return perms
+
+
+    async def has_permission(self, user: User, permission_code: str) -> bool:
+        all_permissions = await self.get_all_permissions(user)
+        return permission_code in all_permissions"""
+
+    async def ensure_permission(
+        self, user: User, permission_code: str
+    ) -> bool:
+        db_permission = await self.permission_repos.find_by_code(code=permission_code)
+        if not db_permission:
+            raise HTTPException(status_code=500, detail="Unkown permission")
+        if not user.has_permission(permission_code):
+            raise HTTPException(status_code=403, detail="Permission denied")
+        return True

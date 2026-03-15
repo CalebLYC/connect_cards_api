@@ -3,10 +3,12 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 
 from app.core.jwt import JWTUtils
+from app.providers.service_providers import  get_user_service
 from app.repositories.access_token_repository import AccessTokenRepository
 from app.repositories.user_repository import UserRepository
 from app.models.user import User
 from app.providers.repository_providers import get_access_token_repository, get_user_repository
+from app.services.auth.user_service import UserService
 
 
 oauth_2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -78,4 +80,63 @@ async def auth_middleware(
         raise HTTPException(
             status_code=500,
             detail=f"Error getting user by token: {str(e)}",
+        )
+
+
+def require_permission(permission_code: str) -> Depends:
+    try:
+
+        async def dependency(
+            user: User = Depends(auth_middleware),
+            ps: UserService = Depends(get_user_service),
+        ):
+            try:
+                await ps.ensure_permission(
+                    user=user,
+                    permission_code=permission_code,
+                )
+            except HTTPException as e:
+                raise e
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Error ensuring permission: {str(e)}",
+                )
+
+        return Depends(dependency)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error while setting permission dependency: {str(e)}",
+        )
+
+
+def require_role(role_name: str) -> Depends:
+    try:
+
+        async def dependency(
+            user: User = Depends(auth_middleware),
+            rs: UserService = Depends(get_user_service),
+        ):
+            try:
+                await rs.ensure_role(
+                    user=user, role_name=role_name
+                )
+            except HTTPException as e:
+                raise e
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Error ensuring role: {str(e)}",
+                )
+
+        return Depends(dependency)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error while setting permission dependency: {str(e)}",
         )
