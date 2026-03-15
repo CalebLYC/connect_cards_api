@@ -35,7 +35,7 @@ Backend API pour de Connect Cards pour l'authentification par carte avec **FastA
 1. Cloner le dépôt et se placer dans le projet :
 
    ```bash
-   git clone https://github.com/tonrepo/connect_card_backend.git
+   git clone https://github.com/CalebLYC/connect_cards_api
    cd connect_card_backend
    ```
 
