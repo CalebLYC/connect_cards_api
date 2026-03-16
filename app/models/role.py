@@ -36,7 +36,9 @@ class Role(Base):
     )
     name = Column(String(50), unique=True, nullable=False)
     description = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
     permissions = relationship(
         "Permission", secondary=role_permissions, backref="roles"
     )
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
