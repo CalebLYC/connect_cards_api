@@ -1,0 +1,32 @@
+Traceback (most recent call last):
+  File "<string>", line 4, in <module>
+    import app.main
+  File "E:\CalebLyc\code\connect_cards_api\app\main.py", line 6, in <module>
+    from app.controllers.auth import (
+    ...<7 lines>...
+    )
+  File "E:\CalebLyc\code\connect_cards_api\app\controllers\auth\permission_controller.py", line 4, in <module>
+    from app.providers.auth_provider import require_role
+  File "E:\CalebLyc\code\connect_cards_api\app\providers\auth_provider.py", line 6, in <module>
+    from app.providers.service_providers import  get_user_service
+  File "E:\CalebLyc\code\connect_cards_api\app\providers\service_providers.py", line 19, in <module>
+    from app.services.auth.auth_service import AuthService
+  File "E:\CalebLyc\code\connect_cards_api\app\services\auth\auth_service.py", line 10, in <module>
+    from app.schemas.auth_schema import (
+    ...<5 lines>...
+    )
+  File "E:\CalebLyc\code\connect_cards_api\app\schemas\auth_schema.py", line 114, in <module>
+    class LoginResponseSchema(BaseModel):
+    ...<7 lines>...
+        from app.schemas.access_token_schema import AccessTokenReadSchema
+  File "C:\Users\caleb\AppData\Roaming\Python\Python314\site-packages\pydantic\_internal\_model_construction.py", line 132, in __new__
+    private_attributes = inspect_namespace(
+        namespace, raw_annotations, config_wrapper.ignored_types, class_vars, base_field_names
+    )
+  File "C:\Users\caleb\AppData\Roaming\Python\Python314\site-packages\pydantic\_internal\_model_construction.py", line 481, in inspect_namespace
+    raise PydanticUserError(
+    ...<4 lines>...
+    )
+pydantic.errors.PydanticUserError: A non-annotated attribute was detected: `SexEnum = <enum 'SexEnum'>`. All model fields require a type annotation; if `SexEnum` is not meant to be a field, you may be able to resolve this error by annotating it as a `ClassVar` or updating `model_config['ignored_types']`.
+
+For further information visit https://errors.pydantic.dev/2.12/u/model-field-missing-annotation

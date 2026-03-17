@@ -15,12 +15,10 @@ from app.models.card import Card
 from app.models.membership import Membership
 from app.models.project import Project
 from app.models.event import Event
-from app.models.card_asssignement_history import CardAssignmentHistory
+from app.models.card_assignment_history import CardAssignmentHistory
 from app.models.identity_project_permission import IdentityProjectPermission
 from app.models.reader import Reader
 from app.models.base import Base
-
-target_metadata = Base.metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -35,6 +33,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

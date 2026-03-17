@@ -4,118 +4,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from app.models.user import SexEnum
-from app.schemas.permission_schema import PermissionReadSchema
-from app.schemas.role_schema import RoleReadSchema
 
-
-class UserCreateSchema(BaseModel):
-    email: EmailStr = Field(..., example="jdoe@example.com")
-    password: str = Field(..., example="12345678")
-    full_name: str = Field(..., example="John Doe")
-    phone_number: Optional[str] = Field(default=None, example="90000000")
-    sex: Optional[SexEnum] = Field(default=None, example="M")
-    birthday_date: Optional[datetime.datetime] = Field(
-        default=None, example="2004-01-01T00:00:00"
-    )
-    picture: Optional[str] = Field(
-        default=None, example="https://example.com/picture.jpg"
-    )
-    locale: Optional[str] = Field(default=None, example="en-US")
-
-    model_config = ConfigDict(
-        from_attributes=True,
-        json_schema_extra={
-            "example": {
-                "email": "jdoe@example.com",
-                "full_name": "John Doe",
-                "password": "12345678",
-                "phone_number": "90000000",
-                "sex": "M",
-                "birthday_date": "2004-01-01T00:00:00",
-                "picture": "https://example.com/picture.jpg",
-                "locale": "en-US",
-            }
-        },
-    )
-
-
-class UserUpdateSchema(BaseModel):
-    email: Optional[EmailStr] = Field(default=None, example="jdoe@example.com")
-    password: Optional[str] = Field(default=None, example="12345678")
-    full_name: Optional[str] = Field(default=None, example="John Doe")
-    phone_number: Optional[str] = Field(default=None, example="90000000")
-    sex: Optional[SexEnum] = Field(default=None, example="F")
-    birthday_date: Optional[datetime.datetime] = Field(
-        default=None, example="2004-01-01T00:00:00"
-    )
-    is_active: Optional[bool] = Field(default=None, example=True)
-    is_verified: Optional[bool] = Field(default=None, example=True)
-    picture: Optional[str] = Field(
-        default=None, example="https://example.com/picture.jpg"
-    )
-    locale: Optional[str] = Field(default=None, example="en-US")
-
-    model_config = ConfigDict(
-        from_attributes=True,
-        json_schema_extra={
-            "example": {
-                "email": "jdoe@example.com",
-                "full_name": "John Doe",
-                "password": "12345678",
-                "phone_number": "90000000",
-                "sex": "F",
-                "birthday_date": "2004-01-01T00:00:00",
-                "is_active": True,
-                "is_verified": True,
-                "picture": "https://example.com/picture.jpg",
-                "locale": "en-US",
-            }
-        },
-    )
-
-
-class UserReadSchema(BaseModel):
-    id: UUID = Field(..., example="04bcf3f5-cde5-4d27-8a20-2f50076043c5")
-    email: EmailStr = Field(..., example="jdoe@example.com")
-    full_name: Optional[str] = Field(default=None, example="John Doe")
-    phone_number: Optional[str] = Field(default=None, example="90000000")
-    sex: Optional[SexEnum] = Field(default=None, example="M")
-    birthday_date: Optional[datetime.datetime] = Field(
-        default=None, example="2004-01-01T00:00:00"
-    )
-    created_at: Optional[datetime.datetime] = Field(
-        default=None, example="2025-01-01T00:00:00"
-    )
-    is_active: bool = Field(default=True, example=True)
-    is_verified: bool = Field(default=False, example=False)
-    picture: Optional[str] = Field(
-        default=None, example="https://example.com/picture.jpg"
-    )
-    locale: Optional[str] = Field(default=None, example="en-US")
-    roles: List[RoleReadSchema] = Field(default_factory=list)
-    permissions: List[PermissionReadSchema] = Field(default_factory=list)
-    #organization: Optional[OrganizationReadSchema] = Field(default=None)
-
-    model_config = ConfigDict(
-        from_attributes=True,
-        json_schema_extra={
-            "example": {
-                "id": "04bcf3f5-cde5-4d27-8a20-2f50076043c5",
-                "email": "jdoe@example.com",
-                "full_name": "John Doe",
-                "phone_number": "90000000",
-                "sex": "M",
-                "birthday_date": "2004-01-01T00:00:00",
-                "created_at": "2025-01-01T00:00:00",
-                "is_active": True,
-                "is_verified": False,
-                "picture": "https://example.com/picture.jpg",
-                "locale": "en-US",
-                "roles": ["user"],
-                "permissions": ["user:read"],
-            }
-        },
-    )
 
 
 class LazyUserReadSchema(BaseModel):
@@ -152,6 +41,140 @@ class LazyUserReadSchema(BaseModel):
                 "is_verified": False,
                 "picture": "https://example.com/picture.jpg",
                 "locale": "en-US",
+                'organization_id': "d290f1ee-6c54-4b01-90e6-d701748f0851",
+            }
+        },
+    )
+
+
+class UserCreateSchema(BaseModel):
+    email: EmailStr = Field(..., example="jdoe@example.com")
+    password: str = Field(..., example="12345678")
+    full_name: str = Field(..., example="John Doe")
+    phone_number: Optional[str] = Field(default=None, example="90000000")
+    sex: Optional[SexEnum] = Field(default=None, example="M")
+    birthday_date: Optional[datetime.datetime] = Field(
+        default=None, example="2004-01-01T00:00:00"
+    )
+    picture: Optional[str] = Field(
+        default=None, example="https://example.com/picture.jpg"
+    )
+    locale: Optional[str] = Field(default=None, example="en-US")
+    organization_id: Optional[UUID] = Field(
+        default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
+    )
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "email": "jdoe@example.com",
+                "full_name": "John Doe",
+                "password": "12345678",
+                "phone_number": "90000000",
+                "sex": "M",
+                "birthday_date": "2004-01-01T00:00:00",
+                "picture": "https://example.com/picture.jpg",
+                "locale": "en-US",
+                'organization_id': "d290f1ee-6c54-4b01-90e6-d701748f0851",
+            }
+        },
+    )
+
+
+class UserUpdateSchema(BaseModel):
+    email: Optional[EmailStr] = Field(default=None, example="jdoe@example.com")
+    password: Optional[str] = Field(default=None, example="12345678")
+    full_name: Optional[str] = Field(default=None, example="John Doe")
+    phone_number: Optional[str] = Field(default=None, example="90000000")
+    sex: Optional[SexEnum] = Field(default=None, example="F")
+    birthday_date: Optional[datetime.datetime] = Field(
+        default=None, example="2004-01-01T00:00:00"
+    )
+    is_active: Optional[bool] = Field(default=None, example=True)
+    is_verified: Optional[bool] = Field(default=None, example=True)
+    picture: Optional[str] = Field(
+        default=None, example="https://example.com/picture.jpg"
+    )
+    locale: Optional[str] = Field(default=None, example="en-US")
+    organization_id: Optional[UUID] = Field(
+        default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
+    )
+
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "email": "jdoe@example.com",
+                "full_name": "John Doe",
+                "password": "12345678",
+                "phone_number": "90000000",
+                "sex": "F",
+                "birthday_date": "2004-01-01T00:00:00",
+                "is_active": True,
+                "is_verified": True,
+                "picture": "https://example.com/picture.jpg",
+                "locale": "en-US",
+                'organization_id': "d290f1ee-6c54-4b01-90e6-d701748f0851",
+            }
+        },
+    )
+
+
+from app.schemas.organization_schema import LazyOrganizationReadSchema
+from app.schemas.permission_schema import PermissionReadSchema
+from app.schemas.role_schema import RoleReadSchema
+class UserReadSchema(BaseModel):
+
+    id: UUID = Field(..., example="04bcf3f5-cde5-4d27-8a20-2f50076043c5")
+    email: EmailStr = Field(..., example="jdoe@example.com")
+    full_name: Optional[str] = Field(default=None, example="John Doe")
+    phone_number: Optional[str] = Field(default=None, example="90000000")
+    sex: Optional[SexEnum] = Field(default=None, example="M")
+    birthday_date: Optional[datetime.datetime] = Field(
+        default=None, example="2004-01-01T00:00:00"
+    )
+    created_at: Optional[datetime.datetime] = Field(
+        default=None, example="2025-01-01T00:00:00"
+    )
+    is_active: bool = Field(default=True, example=True)
+    is_verified: bool = Field(default=False, example=False)
+    picture: Optional[str] = Field(
+        default=None, example="https://example.com/picture.jpg"
+    )
+    locale: Optional[str] = Field(default=None, example="en-US")
+    organization_id: Optional[UUID] = Field(
+        default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
+    )
+    roles: List[RoleReadSchema] = Field(default_factory=list)
+    permissions: List[PermissionReadSchema] = Field(default_factory=list)
+    organization: Optional[LazyOrganizationReadSchema] = Field(default=None)
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": "04bcf3f5-cde5-4d27-8a20-2f50076043c5",
+                "email": "jdoe@example.com",
+                "full_name": "John Doe",
+                "phone_number": "90000000",
+                "sex": "M",
+                "birthday_date": "2004-01-01T00:00:00",
+                "created_at": "2025-01-01T00:00:00",
+                "is_active": True,
+                "is_verified": False,
+                "picture": "https://example.com/picture.jpg",
+                "locale": "en-US",
+                "organization_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                "roles": ["user"],
+                "permissions": ["user:read"],
+                'organization': {
+                    'id': 'd290f1ee-6c54-4b01-90e6-d701748f0851',
+                    'name': 'Example Organization',
+                    'description': 'An example organization for testing purposes.',
+                }
+
             }
         },
     )

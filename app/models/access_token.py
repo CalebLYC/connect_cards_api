@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from sqlalchemy import Column, DateTime, String, ForeignKey, Boolean
+from sqlalchemy import Column, DateTime, String, ForeignKey, Boolean, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, validates
 
@@ -22,6 +22,11 @@ class AccessToken(Base):
     expires_at = Column(DateTime)
     revoked = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_access_tokens_user_id", "user_id"),
+        Index("idx_access_tokens_expires_at", "expires_at"),
+    )
 
     @validates("expires_at")
     def validate_expires_at(self, key, expires_at):

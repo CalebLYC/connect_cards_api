@@ -10,4 +10,4 @@ from .permission import Permission
 from .access_token import AccessToken
 from .reader import Reader
 from .event import Event
-from .card_asssignement_history import CardAssignmentHistory
+from .card_assignment_history import CardAssignmentHistory

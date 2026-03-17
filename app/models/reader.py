@@ -2,6 +2,7 @@ import uuid
 from sqlalchemy import (
     Column,
     ForeignKey,
+    Index,
     String,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -27,3 +28,9 @@ class Reader(Base):
 
     organization = relationship("Organization", back_populates="readers")
     project = relationship("Project", back_populates="readers")
+    events = relationship("Event", back_populates="reader")
+
+    __table_args__ = (
+        Index("idx_readers_organization_id", "organization_id"),
+        Index("idx_readers_project_id", "project_id"),
+    )

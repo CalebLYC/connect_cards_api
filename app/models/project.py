@@ -3,6 +3,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
+    Index,
     String,
     func,
 )
@@ -28,3 +29,9 @@ class Project(Base):
         "IdentityProjectPermission",
         back_populates="project"
     )
+    events = relationship("Event", back_populates="project")
+
+    __table_args__ = (
+        Index("idx_projects_organization_id", "organization_id"),
+    )
+    readers = relationship("Reader", back_populates="project")

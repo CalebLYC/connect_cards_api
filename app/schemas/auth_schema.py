@@ -3,31 +3,9 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.models.user import SexEnum
+from app.schemas.user_schema import UserReadSchema, LazyUserReadSchema
 from app.schemas.access_token_schema import AccessTokenReadSchema
-from app.schemas.user_schema import LazyUserReadSchema, UserReadSchema
 
-
-class LoginRequestSchema(BaseModel):
-    email: EmailStr
-    password: str
-    model_config = ConfigDict(
-        from_attributes=True,
-        json_schema_extra={
-            "example": {
-                "email": "jdoe@example.com",
-                "password": "12345678",
-            }
-        },
-    )
-
-
-class LoginResponseSchema(BaseModel):
-    user: UserReadSchema
-    access_token: AccessTokenReadSchema
-    model_config = ConfigDict(
-        from_attributes=True,
-    )
-    
 
 class LazyLoginResponseSchema(BaseModel):
     user: LazyUserReadSchema
@@ -118,4 +96,26 @@ class ChangeUserPasswordSchema(BaseModel):
                 "new_password_confirmation": "12345678",
             }
         },
+    )
+
+
+class LoginRequestSchema(BaseModel):
+    email: EmailStr
+    password: str
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "email": "jdoe@example.com",
+                "password": "12345678",
+            }
+        },
+    )
+
+
+class LoginResponseSchema(BaseModel):
+    user: UserReadSchema
+    access_token: AccessTokenReadSchema
+    model_config = ConfigDict(
+        from_attributes=True,
     )

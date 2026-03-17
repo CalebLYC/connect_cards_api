@@ -6,6 +6,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     Enum as SqlEnum,
+    Index,
     String,
     ForeignKey,
     Table,
@@ -63,6 +64,10 @@ class User(Base):
     roles = relationship("Role", secondary=user_roles, backref="users")
     permissions = relationship("Permission", secondary=user_permissions, backref="users")
     organization = relationship("Organization", back_populates="users")
+
+    __table_args__ = (
+        Index("idx_users_organization_id", "organization_id"),
+    )
 
     def has_role(self, role_name: str) -> bool:
         """Vérifie si l'utilisateur possède un rôle donné."""

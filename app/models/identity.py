@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.models.base import Base
 
+
 class Identity(Base):
     __tablename__ = "identities"
 
@@ -20,6 +21,9 @@ class Identity(Base):
     cards = relationship("Card", back_populates="identity")
     memberships = relationship("Membership", back_populates="identity")
     project_permissions = relationship(
-        "IdentityProjectPermission",
-        back_populates="identity"
+        "IdentityProjectPermission", back_populates="identity"
+    )
+    # events = relationship("Event", back_populates="identity")
+    card_assignment_history = relationship(
+        "CardAssignmentHistory", back_populates="identity"
     )

@@ -1,8 +1,7 @@
 import uuid
 from sqlalchemy import (
     Column,
-    ForeignKey,
-   Boolean,
+    ForeignKey,    Index,   Boolean,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -25,4 +24,8 @@ class IdentityProjectPermission(Base):
         "Project",
         back_populates="permissions"
     )
-    
+
+    __table_args__ = (
+        Index("idx_identity_project_permissions_identity_id", "identity_id"),
+        Index("idx_identity_project_permissions_project_id", "project_id"),
+    )

@@ -5,6 +5,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
+    Index,
     String,
     func,
 )
@@ -24,3 +25,8 @@ class Membership(Base):
 
     identity = relationship("Identity", back_populates="memberships")
     organization = relationship("Organization", back_populates="memberships")
+
+    __table_args__ = (
+        Index("idx_memberships_identity_id", "identity_id"),
+        Index("idx_memberships_organization_id", "organization_id"),
+    )

@@ -21,15 +21,17 @@ class Card(Base):
     status = Column(String, default="pending")
     activation_code = Column(String, nullable=True)
     issuer_organization_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("organizations.id"),
-        nullable=True
+        UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True
     )
     created_at = Column(DateTime, server_default=func.now())
 
     identity = relationship("Identity", back_populates="cards")
     issuer_organization = relationship("Organization", back_populates="issued_cards")
-    
+    assignment_history = relationship("CardAssignmentHistory", back_populates="card")
+    events = relationship("Event", back_populates="card")
+
     __table_args__ = (
         Index("idx_cards_uid", "uid"),
+        Index("idx_cards_identity_id", "identity_id"),
+        Index("idx_cards_issuer_organization_id", "issuer_organization_id"),
     )

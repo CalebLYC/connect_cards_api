@@ -3,7 +3,27 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional
 from uuid import UUID
 
-from app.schemas.permission_schema import PermissionReadSchema
+
+
+class LazyRoleReadSchema(BaseModel):
+    id: UUID = Field(..., example="04bcf3f5-cde5-4d27-8a20-2f50076043c5")
+    name: str = Field(example="user")
+    description: str = Field(example="description")
+    created_at: Optional[datetime.datetime] = Field(
+        default=None, example="2025-01-01T00:00:00"
+    )
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": "04bcf3f5-cde5-4d27-8a20-2f50076043c5",
+                "name": "user",
+                "description": "description",
+                "created_at": "2025-01-01T00:00:00",
+            }
+        },
+    )
 
 
 class RoleCreateSchema(BaseModel):
@@ -36,7 +56,9 @@ class RoleUpdateSchema(BaseModel):
     )
 
 
+from app.schemas.permission_schema import PermissionReadSchema
 class RoleReadSchema(BaseModel):
+    
     id: UUID = Field(..., example="04bcf3f5-cde5-4d27-8a20-2f50076043c5")
     name: str = Field(example="user")
     description: str = Field(example="description")
@@ -54,27 +76,6 @@ class RoleReadSchema(BaseModel):
                 "description": "description",
                 "created_at": "2025-01-01T00:00:00",
                 "permissions": ["user:read"],
-            }
-        },
-    )
-    
-    
-class LazyRoleReadSchema(BaseModel):
-    id: UUID = Field(..., example="04bcf3f5-cde5-4d27-8a20-2f50076043c5")
-    name: str = Field(example="user")
-    description: str = Field(example="description")
-    created_at: Optional[datetime.datetime] = Field(
-        default=None, example="2025-01-01T00:00:00"
-    )
-
-    model_config = ConfigDict(
-        from_attributes=True,
-        json_schema_extra={
-            "example": {
-                "id": "04bcf3f5-cde5-4d27-8a20-2f50076043c5",
-                "name": "user",
-                "description": "description",
-                "created_at": "2025-01-01T00:00:00",
             }
         },
     )
