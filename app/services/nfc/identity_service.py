@@ -1,7 +1,12 @@
 from typing import Optional, List
 from app.repositories.identity_repository import IdentityRepository
 from app.models.identity import Identity
-from app.schemas.identity_schema import IdentityCreateSchema, IdentityUpdateSchema, IdentityReadSchema
+from app.schemas.identity_schema import (
+    IdentityCreateSchema,
+    IdentityUpdateSchema,
+    IdentityReadSchema,
+    LazyIdentityReadSchema,
+)
 from fastapi import HTTPException, status
 
 
@@ -12,11 +17,14 @@ class IdentityService:
     ):
         self.identity_repos = identity_repos
 
-    async def get_identity(self, identity_id: str) -> Optional[IdentityReadSchema]:
+    async def get_identity(
+        self, identity_id: str, eager: bool = True
+    ) -> Optional[IdentityReadSchema]:
         """Retrieve an identity by its ID.
 
         Args:
             identity_id (str): The ID of the identity to retrieve.
+            eager (bool, optional): If True, use eager loading for relationships. Defaults to True.
 
         Raises:
             HTTPException: 404 If the identity is not found.
@@ -24,7 +32,11 @@ class IdentityService:
         Returns:
             Optional[IdentityReadSchema]: The identity data if found, otherwise None.
         """
-        identity = await self.identity_repos.find_by_id(identity_id)
+        if eager:
+            identity = await self.identity_repos.find_by_id_eager(identity_id)
+        else:
+            identity = await self.identity_repos.find_by_id(identity_id)
+
         if not identity:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Identity not found"
@@ -51,7 +63,7 @@ class IdentityService:
         return IdentityReadSchema.model_validate(identity)
 
     async def list_identitys(
-        self, skip: int = 0, limit: int = 100, all: bool = False
+        self, skip: int = 0, limit: int = 100, all: bool = False, eager: bool = False
     ) -> List[IdentityReadSchema]:
         """List identities with pagination.
 
@@ -59,13 +71,23 @@ class IdentityService:
             skip (int, optional): Number of identities to skip. Defaults to 0.
             limit (int, optional): Maximum number of identities to return. Defaults to 100.
             all (bool, optional): If True, return all identities without pagination. Defaults to False.
+            eager (bool, optional): If True, use eager loading for relationships. Defaults to False.
         Returns:
             List[IdentityReadSchema]: A list of identity data schemas.
         """
-        identitys = await self.identity_repos.list_identities(skip=skip, limit=limit, all=all)
+        if eager:
+            identitys = await self.identity_repos.list_identities_eager(
+                skip=skip, limit=limit, all=all
+            )
+        else:
+            identitys = await self.identity_repos.list_identities(
+                skip=skip, limit=limit, all=all
+            )
         return [IdentityReadSchema.model_validate(u) for u in identitys]
 
-    async def create_identity(self, identity_create: IdentityCreateSchema) -> IdentityReadSchema:
+    async def create_identity(
+        self, identity_create: IdentityCreateSchema
+    ) -> IdentityReadSchema:
         """Create a new identity.
 
         Args:
@@ -75,7 +97,7 @@ class IdentityService:
             HTTPException: 400 If the email is already registered.
 
         Returns:
-            IdentityReadSchema: The created identity data.
+            LazyIdentityReadSchema: The created identity data.
         """
         existing = await self.identity_repos.find_by_email(identity_create.email)
         if existing:
@@ -83,11 +105,11 @@ class IdentityService:
 
         identity_model = Identity(**identity_create.model_dump())
         created = await self.identity_repos.create(identity_model)
-        return IdentityReadSchema.model_validate(created)
+        return LazyIdentityReadSchema.model_validate(created)
 
     async def update_identity(
         self, identity_id: str, identity_update: IdentityUpdateSchema
-    ) -> IdentityReadSchema:
+    ) -> LazyIdentityReadSchema:
         """Update an existing identity.
 
         Args:
@@ -100,7 +122,7 @@ class IdentityService:
             HTTPException: 500 Internal Server Error if the update fails.
 
         Returns:
-            IdentityReadSchema: The updated identity data.
+            LazyIdentityReadSchema: The updated identity data.
         """
         identity = await self.identity_repos.find_by_id(identity_id)
         if not identity:
@@ -117,10 +139,10 @@ class IdentityService:
         updated = await self.identity_repos.update(identity)
         if not updated:
             raise HTTPException(status_code=500, detail="Update failed")
-        return IdentityReadSchema.model_validate(updated)
+        return LazyIdentityReadSchema.model_validate(updated)
 
-    async def verify_identity(self, identity_id: str) -> IdentityReadSchema:
-        """Verify a identity's account.
+    """async def verify_identity(self, identity_id: str) -> LazyIdentityReadSchema:
+      Verify a identity's account.
 
         Args:
             identity_id (str): The ID of the identity to verify.
@@ -130,8 +152,7 @@ class IdentityService:
             HTTPException: 500 If the verification fails.
 
         Returns:
-            IdentityReadSchema: The updated identity data after verification.
-        """
+            LazyIdentityReadSchema: The updated identity data after verification.
         identity = await self.identity_repos.find_by_id(identity_id)
         if not identity:
             raise HTTPException(status_code=404, detail="Identity not found")
@@ -143,7 +164,7 @@ class IdentityService:
             raise HTTPException(status_code=500, detail="Identity verification failed")
 
         updated = await self.identity_repos.find_by_id(identity_id)
-        return IdentityReadSchema.model_validate(updated)
+        return LazyIdentityReadSchema.model_validate(updated)"""
 
     async def delete_identity(self, identity_id: str) -> None:
         """Delete a identity by its ID.
@@ -161,7 +182,11 @@ class IdentityService:
         identity = await self.identity_repos.find_by_id(identity_id)
         if not identity:
             raise HTTPException(status_code=404, detail="Identity not found")
-        success = await self.identity_repos.delete(identity_id)
-        if not success:
-            raise HTTPException(status_code=500, detail="Delete failed")
-        return success
+        success = await self.identity_repos.delete(
+            identity
+        )  # Updated to use model instance if repo Expects it, but wait, IdentityRepository.delete takes instance
+        return True
+
+    async def delete_all_identities(self) -> None:
+        """Delete all identities."""
+        await self.identity_repos.delete_all()

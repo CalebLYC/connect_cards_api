@@ -6,13 +6,23 @@ from fastapi.responses import FileResponse
 from app.controllers.auth import (
     # google_auth_controller,
     # otp_controller,
-    permission_controller,  # Décommenter cette ligne
-    # role_controller,
+    permission_controller,
     auth_controller,
     role_controller,
     user_controller,
 )
-from app.controllers import identity_controller, setup_controller
+from app.controllers import setup_controller
+from app.controllers.nfc import (
+    card_controller,
+    organization_controller,
+    project_controller,
+    reader_controller,
+    event_controller,
+    membership_controller,
+    card_assignment_history_controller,
+    identity_project_permission_controller,
+    identity_controller,
+)
 from app.core.config import Settings
 from app.providers.providers import get_settings
 
@@ -39,14 +49,24 @@ app.add_middleware(
     allow_methods="*",
 )
 
-# Ajout des controllers/routers
+# Auth controllers
 app.include_router(auth_controller.router)
 app.include_router(user_controller.router)
-app.include_router(identity_controller.router)
 # app.include_router(otp_controller.router)
 app.include_router(role_controller.router)
 app.include_router(permission_controller.router)
 app.include_router(setup_controller.router)
+
+# NFC controllers
+app.include_router(identity_controller.router)
+app.include_router(card_controller.router)
+app.include_router(organization_controller.router)
+app.include_router(project_controller.router)
+app.include_router(reader_controller.router)
+app.include_router(event_controller.router)
+app.include_router(membership_controller.router)
+app.include_router(card_assignment_history_controller.router)
+app.include_router(identity_project_permission_controller.router)
 
 
 # Endpoint racine

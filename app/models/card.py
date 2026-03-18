@@ -17,7 +17,7 @@ class Card(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     uid = Column(String, unique=True, nullable=False)
-    identity_id = Column(UUID(as_uuid=True), ForeignKey("identities.id"))
+    identity_id = Column(UUID(as_uuid=True), ForeignKey("identities.id"), nullable=True)
     status = Column(String, default="pending")
     activation_code = Column(String, nullable=True)
     issuer_organization_id = Column(

@@ -1,5 +1,5 @@
 from typing import Optional, List
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -17,6 +17,7 @@ class UserRepository:
             select(User)
             .options(selectinload(User.roles).selectinload(Role.permissions))
             .options(selectinload(User.permissions))
+            .options(selectinload(User.organization))
             .where(User.id == id)
         )
         result = await self.db.execute(stmt)
@@ -66,6 +67,7 @@ class UserRepository:
             select(User)
             .options(selectinload(User.roles).selectinload(Role.permissions))
             .options(selectinload(User.permissions))
+            .options(selectinload(User.organization))
         )
         
         if not all:
@@ -90,4 +92,9 @@ class UserRepository:
 
     async def delete(self, user: User) -> None:
         await self.db.delete(user)
+        await self.db.commit()
+
+    async def delete_all(self) -> None:
+        stmt = delete(User)
+        await self.db.execute(stmt)
         await self.db.commit()

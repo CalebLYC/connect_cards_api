@@ -4,6 +4,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -14,14 +15,8 @@ class Reader(Base):
     __tablename__ = "readers"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("organizations.id")
-    )
-    project_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("projects.id")
-    )
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"))
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"))
     name = Column(String)
     location = Column(String)
     status = Column(String, default="active")
@@ -31,6 +26,7 @@ class Reader(Base):
     events = relationship("Event", back_populates="reader")
 
     __table_args__ = (
+        UniqueConstraint("name", "organization_id", name="uq_reader_name_org_id"),
         Index("idx_readers_organization_id", "organization_id"),
         Index("idx_readers_project_id", "project_id"),
     )

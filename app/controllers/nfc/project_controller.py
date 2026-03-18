@@ -1,0 +1,81 @@
+from fastapi import APIRouter, Depends, Query, Path, status
+from typing import List
+from app.providers.auth_provider import require_permission
+from app.providers.service_providers import get_project_service
+from app.schemas.project_schema import (
+    ProjectReadSchema,
+    LazyProjectReadSchema,
+    ProjectCreateSchema,
+    ProjectUpdateSchema,
+)
+from app.services.nfc.project_service import ProjectService
+from app.utils.constants import http_status
+
+router = APIRouter(
+    prefix="/projects",
+    tags=["Projects"],
+    # dependencies=[require_permission("project:manage")],
+    responses=http_status.router_responses,
+)
+
+
+@router.get("/", response_model=List[ProjectReadSchema], summary="List projects")
+async def list_projects(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    eager: bool = Query(True),
+    service: ProjectService = Depends(get_project_service),
+):
+    return await service.list_projects(skip=skip, limit=limit, eager=eager)
+
+
+@router.get("/{id}", response_model=ProjectReadSchema, summary="Get project by ID")
+async def get_project(
+    id: str = Path(..., min_length=24, max_length=36),
+    eager: bool = Query(True),
+    service: ProjectService = Depends(get_project_service),
+):
+    return await service.get_project(id, eager=eager)
+
+
+@router.post(
+    "/",
+    response_model=LazyProjectReadSchema,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create project",
+)
+async def create_project(
+    project_create: ProjectCreateSchema,
+    service: ProjectService = Depends(get_project_service),
+):
+    return await service.create_project(project_create)
+
+
+@router.put("/{id}", response_model=LazyProjectReadSchema, summary="Update project")
+async def update_project(
+    id: str = Path(..., min_length=24, max_length=36),
+    project_update: ProjectUpdateSchema = ...,
+    service: ProjectService = Depends(get_project_service),
+):
+    return await service.update_project(id, project_update)
+
+
+@router.delete(
+    "/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete project"
+)
+async def delete_project(
+    id: str = Path(..., min_length=24, max_length=36),
+    service: ProjectService = Depends(get_project_service),
+):
+    await service.delete_project(id)
+    return {"detail": "Project deleted"}
+
+
+@router.delete(
+    "/", status_code=status.HTTP_204_NO_CONTENT, summary="Delete all projects"
+)
+async def delete_all_projects(
+    service: ProjectService = Depends(get_project_service),
+):
+    await service.delete_all_projects()
+    return {"detail": "All projects deleted"}

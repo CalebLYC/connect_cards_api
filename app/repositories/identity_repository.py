@@ -1,6 +1,8 @@
-from typing import Optional, List
-from sqlalchemy import select
+from typing import Optional, List, Any
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+import uuid
 
 from app.models.identity import Identity
 
@@ -28,6 +30,56 @@ class IdentityRepository:
         return result.scalar_one_or_none()
     
 
+    async def find_by_id_eager(self, id: Any) -> Optional[Identity]:
+        if isinstance(id, str):
+            id = uuid.UUID(id)
+        stmt = (
+            select(Identity)
+            .options(
+                selectinload(Identity.cards),
+                selectinload(Identity.memberships),
+                selectinload(Identity.project_permissions),
+                # selectinload(Identity.events),
+                # selectinload(Identity.card_assignment_history),
+            )
+            .where(Identity.id == id)
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def find_many(
+        self, filters: dict = None, skip: int = 0, limit: int = 100
+    ) -> List[Identity]:
+        stmt = select(Identity)
+        if filters:
+            for key, value in filters.items():
+                if hasattr(Identity, key):
+                    stmt = stmt.where(getattr(Identity, key) == value)
+        stmt = stmt.offset(skip).limit(limit)
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
+
+    async def find_many_eager(
+        self, filters: dict = None, skip: int = 0, limit: int = 100
+    ) -> List[Identity]:
+        stmt = (
+            select(Identity)
+            .options(
+                selectinload(Identity.cards),
+                selectinload(Identity.memberships),
+                selectinload(Identity.project_permissions),
+                # selectinload(Identity.events),
+                # selectinload(Identity.card_assignment_history),
+            )
+        )
+        if filters:
+            for key, value in filters.items():
+                if hasattr(Identity, key):
+                    stmt = stmt.where(getattr(Identity, key) == value)
+        stmt = stmt.offset(skip).limit(limit)
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
+
     async def list_identities(
         self,
         skip: int = 0,
@@ -42,7 +94,27 @@ class IdentityRepository:
 
         result = await self.db.execute(stmt)
         return result.scalars().all()
-    
+
+    async def list_identities_eager(
+        self,
+        skip: int = 0,
+        limit: Optional[int] = 100,
+        all: bool = False,
+    ) -> List[Identity]:
+
+        stmt = select(Identity).options(
+            selectinload(Identity.cards),
+            selectinload(Identity.memberships),
+            selectinload(Identity.project_permissions),
+            # selectinload(Identity.events),
+            # selectinload(Identity.card_assignment_history),
+        )
+
+        if not all:
+            stmt = stmt.offset(skip).limit(limit)
+
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
 
     async def create(self, identity: Identity) -> Identity:
         self.db.add(identity)
@@ -59,4 +131,9 @@ class IdentityRepository:
 
     async def delete(self, identity: Identity) -> None:
         await self.db.delete(identity)
+        await self.db.commit()
+
+    async def delete_all(self) -> None:
+        stmt = delete(Identity)
+        await self.db.execute(stmt)
         await self.db.commit()
