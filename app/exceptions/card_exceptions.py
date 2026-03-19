@@ -34,3 +34,33 @@ class ProjectNotFoundException(Exception):
         self.project_id = project_id
         self.message = f"Project '{self.project_id}' not found."
         super().__init__(self.message)
+
+
+class CardAlreadyActiveException(Exception):
+    def __init__(self, card_uid):
+        self.card_uid = card_uid
+        self.message = f"Card with UID '{self.card_uid}' is already active."
+        super().__init__(self.message)
+
+
+class InvalidActivationCodeException(Exception):
+    def __init__(self, card_uid):
+        self.card_uid = card_uid
+        self.message = f"Invalid activation code for card with UID '{self.card_uid}'."
+        super().__init__(self.message)
+
+
+class ActivationCodeExpiredException(Exception):
+    def __init__(self, card_uid):
+        self.card_uid = card_uid
+        self.message = (
+            f"Activation code for card with UID '{self.card_uid}' has expired."
+        )
+        super().__init__(self.message)
+
+
+class CardNotActiveException(Exception):
+    def __init__(self, card_uid):
+        self.card_uid = card_uid
+        self.message = f"Card with UID '{self.card_uid}' is not currently active."
+        super().__init__(self.message)

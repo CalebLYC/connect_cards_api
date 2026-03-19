@@ -9,8 +9,14 @@ from app.schemas.card_schema import (
     CardCreateSchema,
     CardUpdateSchema,
 )
-from app.schemas.nfc_schema import ScanCardResponse
+from app.schemas.nfc_schema import (
+    ScanCardResponse,
+    CardActivationRequest,
+    CardActivationResponse,
+)
 from app.services.nfc.card_service import CardService
+from app.core.config import Settings
+from app.providers.providers import get_settings
 from app.utils.constants import http_status
 
 router = APIRouter(
@@ -67,6 +73,39 @@ async def scan_card(
     Returns authorized status and user permissions.
     """
     return await service.scan_card(uid, project_id)
+
+
+@router.post(
+    "/revoke/{uid}",
+    response_model=CardActivationResponse,
+    summary="Revoke card assignment",
+)
+async def revoke_card(
+    uid: str = Path(...),
+    service: CardService = Depends(get_card_service),
+):
+    """
+    Revoke an NFC card assignment.
+    Unlinks the card from its user and resets it to pending status.
+    """
+    return await service.revoke_card(uid)
+
+
+@router.post(
+    "/activate",
+    response_model=CardActivationResponse,
+    summary="Activate card with code",
+)
+async def activate_card(
+    request: CardActivationRequest,
+    service: CardService = Depends(get_card_service),
+    settings: Settings = Depends(get_settings),
+):
+    """
+    Activate an NFC card using a UID and activation code.
+    Links the card to an identity and marks it as active.
+    """
+    return await service.activate_card(request, settings)
 
 
 @router.post(

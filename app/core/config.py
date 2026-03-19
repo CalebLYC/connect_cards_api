@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     # Paramètres OTP
     otp_expiry_minutes: int = Field(..., alias="OTP_EXPIRY_MINUTES")
     otp_length: int = Field(..., alias="OTP_LENGTH")
+    card_activation_code_expiry_minutes: int = Field(
+        default=1440, alias="CARD_ACTIVATION_CODE_EXPIRY_MINUTES"
+    )
 
     # URL du frontend à utiliser pour les redirections
     web_frontend_url: str = Field(..., alias="WEB_FRONTEND_URL")

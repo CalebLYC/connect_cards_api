@@ -14,7 +14,9 @@ class IdentityProjectPermissionRepository:
     async def find_by_id(self, id: Any) -> Optional[IdentityProjectPermission]:
         if isinstance(id, str):
             id = uuid.UUID(id)
-        stmt = select(IdentityProjectPermission).where(IdentityProjectPermission.id == id)
+        stmt = select(IdentityProjectPermission).where(
+            IdentityProjectPermission.id == id
+        )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -47,12 +49,9 @@ class IdentityProjectPermissionRepository:
     async def find_many_eager(
         self, filters: dict = None, skip: int = 0, limit: int = 100
     ) -> List[IdentityProjectPermission]:
-        stmt = (
-            select(IdentityProjectPermission)
-            .options(
-                selectinload(IdentityProjectPermission.identity),
-                selectinload(IdentityProjectPermission.project),
-            )
+        stmt = select(IdentityProjectPermission).options(
+            selectinload(IdentityProjectPermission.identity),
+            selectinload(IdentityProjectPermission.project),
         )
         if filters:
             for key, value in filters.items():
@@ -62,12 +61,16 @@ class IdentityProjectPermissionRepository:
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def list(self, skip: int = 0, limit: int = 100) -> List[IdentityProjectPermission]:
+    async def list(
+        self, skip: int = 0, limit: int = 100
+    ) -> List[IdentityProjectPermission]:
         stmt = select(IdentityProjectPermission).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def list_eager(self, skip: int = 0, limit: int = 100) -> List[IdentityProjectPermission]:
+    async def list_eager(
+        self, skip: int = 0, limit: int = 100
+    ) -> List[IdentityProjectPermission]:
         stmt = (
             select(IdentityProjectPermission)
             .options(
@@ -80,20 +83,26 @@ class IdentityProjectPermissionRepository:
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def create(self, permission: IdentityProjectPermission) -> IdentityProjectPermission:
+    async def create(
+        self, permission: IdentityProjectPermission
+    ) -> IdentityProjectPermission:
         self.db.add(permission)
         await self.db.commit()
         await self.db.refresh(permission)
         return permission
 
-    async def create_many(self, permissions: List[IdentityProjectPermission]) -> List[IdentityProjectPermission]:
+    async def create_many(
+        self, permissions: List[IdentityProjectPermission]
+    ) -> List[IdentityProjectPermission]:
         self.db.add_all(permissions)
         await self.db.commit()
         for permission in permissions:
             await self.db.refresh(permission)
         return permissions
 
-    async def update(self, permission: IdentityProjectPermission) -> IdentityProjectPermission:
+    async def update(
+        self, permission: IdentityProjectPermission
+    ) -> IdentityProjectPermission:
         await self.db.commit()
         await self.db.refresh(permission)
         return permission
@@ -106,3 +115,16 @@ class IdentityProjectPermissionRepository:
         stmt = delete(IdentityProjectPermission)
         await self.db.execute(stmt)
         await self.db.commit()
+
+    async def find_by_identity_and_project(
+        self, identity_id: uuid.UUID, project_id: uuid.UUID
+    ) -> Optional[IdentityProjectPermission]:
+        """
+        Finds a permission record for a specific identity and project.
+        """
+        stmt = select(IdentityProjectPermission).where(
+            IdentityProjectPermission.identity_id == identity_id,
+            IdentityProjectPermission.project_id == project_id,
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()

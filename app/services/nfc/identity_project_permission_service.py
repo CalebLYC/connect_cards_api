@@ -1,6 +1,7 @@
 from typing import Optional, List, Dict, Any
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
+import uuid
 
 from app.models.identity_project_permission import IdentityProjectPermission
 from app.repositories.identity_project_permission_repository import (
@@ -99,3 +100,73 @@ class IdentityProjectPermissionService:
 
     async def delete_all_permissions(self) -> None:
         await self.permission_repos.delete_all()
+
+    async def disallow_identity(
+        self, identity_id: str, project_id: str
+    ) -> LazyIdentityProjectPermissionReadSchema:
+        """
+        Explicitly disallows an identity from a project by setting allowed=False.
+        Creates a new record if one does not exist.
+        """
+        try:
+            if isinstance(identity_id, str):
+                identity_id = uuid.UUID(identity_id)
+            if isinstance(project_id, str):
+                project_id = uuid.UUID(project_id)
+
+            permission = await self.permission_repos.find_by_identity_and_project(
+                identity_id, project_id
+            )
+
+            if permission:
+                permission.allowed = False
+                updated = await self.permission_repos.update(permission)
+                return LazyIdentityProjectPermissionReadSchema.model_validate(updated)
+            else:
+                # Create a new "disallow" record
+                new_permission = IdentityProjectPermission(
+                    identity_id=identity_id, project_id=project_id, allowed=False
+                )
+                created = await self.permission_repos.create(new_permission)
+                return LazyIdentityProjectPermissionReadSchema.model_validate(created)
+
+        except IntegrityError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid identity_id or project_id",
+            )
+
+    async def allow_identity(
+        self, identity_id: str, project_id: str
+    ) -> LazyIdentityProjectPermissionReadSchema:
+        """
+        Explicitly allows an identity for a project by setting allowed=True.
+        Creates a new record if one does not exist.
+        """
+        try:
+            if isinstance(identity_id, str):
+                identity_id = uuid.UUID(identity_id)
+            if isinstance(project_id, str):
+                project_id = uuid.UUID(project_id)
+
+            permission = await self.permission_repos.find_by_identity_and_project(
+                identity_id, project_id
+            )
+
+            if permission:
+                permission.allowed = True
+                updated = await self.permission_repos.update(permission)
+                return LazyIdentityProjectPermissionReadSchema.model_validate(updated)
+            else:
+                # Create a new "allow" record
+                new_permission = IdentityProjectPermission(
+                    identity_id=identity_id, project_id=project_id, allowed=True
+                )
+                created = await self.permission_repos.create(new_permission)
+                return LazyIdentityProjectPermissionReadSchema.model_validate(created)
+
+        except IntegrityError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid identity_id or project_id",
+            )

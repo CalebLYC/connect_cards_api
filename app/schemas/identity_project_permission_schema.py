@@ -3,7 +3,6 @@ from typing import Optional
 from uuid import UUID
 
 
-
 class LazyIdentityProjectPermissionReadSchema(BaseModel):
     id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
     identity_id: UUID = Field(..., example="04bcf3f5-cde5-4d27-8a20-2f50076043c5")
@@ -22,7 +21,7 @@ class LazyIdentityProjectPermissionReadSchema(BaseModel):
         },
     )
 
-    
+
 class IdentityProjectPermissionCreateSchema(BaseModel):
     identity_id: UUID = Field(..., example="04bcf3f5-cde5-4d27-8a20-2f50076043c5")
     project_id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
@@ -41,8 +40,12 @@ class IdentityProjectPermissionCreateSchema(BaseModel):
 
 
 class IdentityProjectPermissionUpdateSchema(BaseModel):
-    identity_id: Optional[UUID] = Field(default=None, example="04bcf3f5-cde5-4d27-8a20-2f50076043c5")
-    project_id: Optional[UUID] = Field(default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851")
+    identity_id: Optional[UUID] = Field(
+        default=None, example="04bcf3f5-cde5-4d27-8a20-2f50076043c5"
+    )
+    project_id: Optional[UUID] = Field(
+        default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
+    )
     allowed: Optional[bool] = Field(default=None, example=False)
 
     model_config = ConfigDict(
@@ -59,6 +62,8 @@ class IdentityProjectPermissionUpdateSchema(BaseModel):
 
 from app.schemas.identity_schema import LazyIdentityReadSchema
 from app.schemas.project_schema import LazyProjectReadSchema
+
+
 class IdentityProjectPermissionReadSchema(BaseModel):
 
     id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")

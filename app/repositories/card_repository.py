@@ -9,6 +9,7 @@ from app.models.identity import Identity
 from app.models.identity_project_permission import IdentityProjectPermission
 from app.models.membership import Membership
 from app.models.project import Project
+from app.models.card_assignment_history import CardAssignmentHistory
 from app.exceptions.card_exceptions import (
     CardNotFoundException,
     UnauthorizedAccessException,
@@ -118,6 +119,19 @@ class CardRepository:
         stmt = delete(Card)
         await self.db.execute(stmt)
         await self.db.commit()
+
+    async def get_active_assignment(
+        self, card_id: uuid.UUID
+    ) -> Optional[CardAssignmentHistory]:
+        """
+        Finds the current active assignment history record for a card.
+        """
+        stmt = select(CardAssignmentHistory).where(
+            CardAssignmentHistory.card_id == card_id,
+            CardAssignmentHistory.unassigned_at == None,
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def get_card_with_access_details(
         self, card_uid: str, project_id: Any

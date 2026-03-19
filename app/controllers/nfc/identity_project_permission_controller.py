@@ -12,6 +12,7 @@ from app.services.nfc.identity_project_permission_service import (
     IdentityProjectPermissionService,
 )
 from app.utils.constants import http_status
+import uuid
 
 router = APIRouter(
     prefix="/identity-project-permissions",
@@ -105,3 +106,39 @@ async def delete_all_permissions(
 ):
     await service.delete_all_permissions()
     return {"detail": "All permissions deleted"}
+
+
+@router.post(
+    "/disallow",
+    response_model=LazyIdentityProjectPermissionReadSchema,
+    summary="Disallow identity from project",
+)
+async def disallow_identity(
+    identity_id: uuid.UUID = Query(...),
+    project_id: uuid.UUID = Query(...),
+    service: IdentityProjectPermissionService = Depends(
+        get_identity_project_permission_service
+    ),
+):
+    """
+    Explicitly revoke access for an identity to a project.
+    """
+    return await service.disallow_identity(identity_id, project_id)
+
+
+@router.post(
+    "/allow",
+    response_model=LazyIdentityProjectPermissionReadSchema,
+    summary="Allow identity for project",
+)
+async def allow_identity(
+    identity_id: uuid.UUID = Query(...),
+    project_id: uuid.UUID = Query(...),
+    service: IdentityProjectPermissionService = Depends(
+        get_identity_project_permission_service
+    ),
+):
+    """
+    Explicitly grant access for an identity to a project.
+    """
+    return await service.allow_identity(identity_id, project_id)

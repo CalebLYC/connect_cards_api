@@ -3,6 +3,7 @@ from typing import List
 from uuid import UUID
 
 from app.schemas.identity_schema import LazyIdentityReadSchema
+from app.schemas.card_schema import LazyCardReadSchema
 
 
 class ScanCardResponse(BaseModel):
@@ -29,3 +30,16 @@ class ScanCardResponse(BaseModel):
             }
         },
     )
+
+
+class CardActivationRequest(BaseModel):
+    card_uid: str = Field(..., description="The physical UID of the NFC card")
+    activation_code: str = Field(..., description="The unique activation code")
+    identity_id: UUID = Field(
+        ..., description="The ID of the identity (user) to link the card to"
+    )
+
+
+class CardActivationResponse(BaseModel):
+    success: bool = Field(..., description="Whether the activation was successful")
+    card: LazyCardReadSchema = Field(..., description="The activated card")

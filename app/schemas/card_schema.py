@@ -100,7 +100,7 @@ class CardCreateSchema(BaseModel):
             "example": {
                 "uid": "CARD123456",
                 # "identity_id": "04bcf3f5-cde5-4d27-8a20-2f50076043c5",
-                "status": "pending",
+                # "status": "pending",
                 "issuer_organization_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
             }
         },
