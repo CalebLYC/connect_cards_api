@@ -23,7 +23,7 @@ Backend API pour de Connect Cards pour l'authentification par carte avec **FastA
 
 ## Prérequis
 
-- Python 3.10+
+- Python 3.10+ (Python 3.14.3)
 - PostgreSQL
 - [Poetry](https://python-poetry.org/) ou pip
 <!--- Alembic (si vous utilisez la méthode Alembic)-->

@@ -1,10 +1,21 @@
 from typing import Optional, List, Any
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 import uuid
 
 from app.models.card import Card
+from app.models.identity import Identity
+from app.models.identity_project_permission import IdentityProjectPermission
+from app.models.membership import Membership
+from app.models.project import Project
+from app.exceptions.card_exceptions import (
+    CardNotFoundException,
+    UnauthorizedAccessException,
+    CardInactiveException,
+    IdentityNotAssignedException,
+    ProjectNotFoundException,
+)
 
 
 class CardRepository:
@@ -107,3 +118,65 @@ class CardRepository:
         stmt = delete(Card)
         await self.db.execute(stmt)
         await self.db.commit()
+
+    async def get_card_with_access_details(
+        self, card_uid: str, project_id: Any
+    ) -> dict:
+        """
+        Optimized single-query method to fetch all data required for card access validation.
+        Uses LEFT OUTER JOINs to identify precisely which part of the chain is missing in one trip.
+        """
+        if isinstance(project_id, str):
+            project_id = uuid.UUID(project_id)
+
+        # Main query to fetch data. LEFT joins ensure we get a row if the Card exists.
+        # We include Project in the query to validate its existence simultaneously.
+        stmt = (
+            select(Card, Identity, IdentityProjectPermission, Membership, Project)
+            .outerjoin(Identity, Card.identity_id == Identity.id)
+            .outerjoin(Project, Project.id == project_id)
+            .outerjoin(
+                IdentityProjectPermission,
+                (Identity.id == IdentityProjectPermission.identity_id)
+                & (IdentityProjectPermission.project_id == Project.id),
+            )
+            .outerjoin(
+                Membership,
+                (Identity.id == Membership.identity_id)
+                & (Membership.organization_id == Project.organization_id),
+            )
+            .where(Card.uid == card_uid)
+        )
+
+        result = await self.db.execute(stmt)
+        row = result.first()
+
+        # 1. Check if Card exists
+        if not row:
+            raise CardNotFoundException(card_uid)
+
+        card, identity, permission, membership, project = row
+
+        # 2. Check if Identity is assigned to the card
+        if not identity:
+            raise IdentityNotAssignedException(card_uid)
+
+        # 3. Check if Project exists
+        if not project:
+            raise ProjectNotFoundException(project_id)
+
+        # 4. Check Card Status
+        if card.status != "active":
+            raise CardInactiveException(card_uid)
+
+        # 5. Check Permissions
+        if not permission or not permission.allowed:
+            raise UnauthorizedAccessException(identity.id, project_id)
+
+        return {
+            "card": card,
+            "identity": identity,
+            "permission": permission,
+            "membership": membership,
+            "project": project,
+        }

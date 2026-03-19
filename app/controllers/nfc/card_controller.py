@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query, Path, status
 from typing import List
+from uuid import UUID
 from app.providers.auth_provider import require_permission
 from app.providers.service_providers import get_card_service
 from app.schemas.card_schema import (
@@ -8,6 +9,7 @@ from app.schemas.card_schema import (
     CardCreateSchema,
     CardUpdateSchema,
 )
+from app.schemas.nfc_schema import ScanCardResponse
 from app.services.nfc.card_service import CardService
 from app.utils.constants import http_status
 
@@ -44,6 +46,27 @@ async def get_card_by_uid(
     service: CardService = Depends(get_card_service),
 ):
     return await service.get_card_by_uid(uid)
+
+
+@router.get(
+    "/scan/{uid}",
+    response_model=ScanCardResponse,
+    summary="Scan card and authorize access",
+)
+async def scan_card(
+    uid: str = Path(...),
+    project_id: UUID = Query(...),
+    service: CardService = Depends(get_card_service),
+):
+    """
+    High-performance endpoint to authorize card access to a project.
+    Validates:
+    - Card exists and is active
+    - Card is assigned to an identity
+    - Identity has access to the project
+    Returns authorized status and user permissions.
+    """
+    return await service.scan_card(uid, project_id)
 
 
 @router.post(

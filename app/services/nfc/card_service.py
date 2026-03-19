@@ -10,6 +10,15 @@ from app.schemas.card_schema import (
     CardCreateSchema,
     CardUpdateSchema,
 )
+from app.schemas.identity_schema import LazyIdentityReadSchema
+from app.schemas.nfc_schema import ScanCardResponse
+from app.exceptions.card_exceptions import (
+    CardNotFoundException,
+    UnauthorizedAccessException,
+    CardInactiveException,
+    IdentityNotAssignedException,
+    ProjectNotFoundException,
+)
 
 
 class CardService:
@@ -109,6 +118,37 @@ class CardService:
 
     async def delete_all_cards(self) -> None:
         await self.card_repos.delete_all()
+
+    async def scan_card(self, card_uid: str, project_id: Any) -> ScanCardResponse:
+        try:
+            result = await self.card_repos.get_card_with_access_details(
+                card_uid, project_id
+            )
+
+            identity = result["identity"]
+            membership = result["membership"]
+
+            # Extract Permissions (Roles from membership)
+            permissions_list = (
+                membership.roles if membership and membership.roles else []
+            )
+
+            return ScanCardResponse(
+                authorized=True,
+                user=LazyIdentityReadSchema.model_validate(identity),
+                permissions=permissions_list,
+            )
+
+        except CardNotFoundException as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
+        except ProjectNotFoundException as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
+        except IdentityNotAssignedException as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
+        except CardInactiveException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
+        except UnauthorizedAccessException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
 
     @staticmethod
     def generate_activation_code() -> str:
