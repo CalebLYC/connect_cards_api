@@ -17,10 +17,22 @@ class WebhookRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_active_webhooks_by_event_type(self, event_type: str) -> List[Webhook]:
+    async def get_active_webhooks(
+        self, event_type: str, organization_id: Any, project_id: Optional[Any] = None
+    ) -> List[Webhook]:
         stmt = select(Webhook).where(
-            Webhook.event_type == event_type, Webhook.is_active == True
+            Webhook.event_type == event_type,
+            Webhook.is_active == True,
+            Webhook.organization_id == organization_id,
         )
+        # Webhook either triggers for the specific project OR triggers site-wide (project_id is Null)
+        if project_id:
+            stmt = stmt.where(
+                (Webhook.project_id.is_(None)) | (Webhook.project_id == project_id)
+            )
+        else:
+            stmt = stmt.where(Webhook.project_id.is_(None))
+
         result = await self.db.execute(stmt)
         return result.scalars().all()
 

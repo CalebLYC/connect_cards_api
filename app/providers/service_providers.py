@@ -82,8 +82,15 @@ def get_webhook_service(
 def get_event_dispatcher(
     webhook_repos: WebhookRepository = Depends(get_webhook_repository),
     webhook_service: WebhookService = Depends(get_webhook_service),
+    project_repos: ProjectRepository = Depends(get_project_repository),
+    card_repos: CardRepository = Depends(get_card_repository),
 ) -> EventDispatcher:
-    return EventDispatcher(webhook_repos=webhook_repos, webhook_service=webhook_service)
+    return EventDispatcher(
+        webhook_repos=webhook_repos,
+        webhook_service=webhook_service,
+        project_repos=project_repos,
+        card_repos=card_repos,
+    )
 
 
 def get_identity_service(

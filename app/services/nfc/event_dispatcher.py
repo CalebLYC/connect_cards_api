@@ -3,6 +3,8 @@ from typing import Dict, Any, Optional
 from fastapi import BackgroundTasks
 from app.models.event import Event
 from app.repositories.webhook_repository import WebhookRepository
+from app.repositories.project_repository import ProjectRepository
+from app.repositories.card_repository import CardRepository
 from app.services.nfc.webhook_service import WebhookService
 
 
@@ -14,10 +16,16 @@ class EventDispatcher:
     """
 
     def __init__(
-        self, webhook_repos: WebhookRepository, webhook_service: WebhookService
+        self,
+        webhook_repos: WebhookRepository,
+        webhook_service: WebhookService,
+        project_repos: ProjectRepository = None,
+        card_repos: CardRepository = None,
     ):
         self.webhook_repos = webhook_repos
         self.webhook_service = webhook_service
+        self.project_repos = project_repos
+        self.card_repos = card_repos
 
     async def dispatch_event(self, event: Event, background_tasks: BackgroundTasks):
         """
@@ -34,10 +42,53 @@ class EventDispatcher:
         """
         Internal helper to find and trigger all matching webhooks.
         """
-        webhooks = await self.webhook_repos.get_active_webhooks_by_event_type(
-            event.event_type
-        )
-        if not webhooks:
+        project_org_id = None
+        card_org_id = None
+
+        # 1. Resolve Project's Organization (Building Owner)
+        if event.project_id and self.project_repos:
+            project = await self.project_repos.find_by_id(event.project_id)
+            if project:
+                project_org_id = project.organization_id
+
+        print("Project Org ID:", project_org_id)
+
+        # 2. Resolve Card's Issuer Organization
+        if event.card_id and self.card_repos:
+            card = await self.card_repos.find_by_id(event.card_id)
+            if card:
+                card_org_id = card.issuer_organization_id
+        elif (
+            not event.card_id
+            and event.metadata_desc
+            and "card_uid" in event.metadata_desc
+            and self.card_repos
+        ):
+            # Fallback for early events like `CARD_SCANNED` where card_id isn't strictly attached yet
+            card = await self.card_repos.find_by_uid(event.metadata_desc["card_uid"])
+            if card:
+                card_org_id = card.issuer_organization_id
+
+        print("Card Org ID:", card_org_id)
+
+        all_webhooks = []
+
+        # A: Trigger Webhooks for the Project Owner (allow scoping to specific project_id or global)
+        if project_org_id:
+            project_webhooks = await self.webhook_repos.get_active_webhooks(
+                event.event_type, project_org_id, event.project_id
+            )
+            all_webhooks.extend(project_webhooks)
+
+        # B: Trigger Webhooks for the Card Issuer (must be global, as they don't own the project)
+        if card_org_id and card_org_id != project_org_id:
+            issuer_webhooks = await self.webhook_repos.get_active_webhooks(
+                event.event_type, card_org_id, None
+            )
+            all_webhooks.extend(issuer_webhooks)
+
+        if not all_webhooks:
+            print("No webhooks found for event", event)
             return
 
         payload = {
@@ -50,7 +101,7 @@ class EventDispatcher:
             "created_at": event.created_at.isoformat() if event.created_at else None,
         }
 
-        for webhook in webhooks:
+        for webhook in all_webhooks:
             """if background_tasks:
                 background_tasks.add_task(
                     self.webhook_service.send_webhook,

@@ -35,6 +35,12 @@ class WebhookService:
     async def create_webhook(
         self, webhook_create: WebhookCreateSchema
     ) -> WebhookReadSchema:
+        if webhook_create.project_id:
+            project = await self.project_repos.find_by_id(webhook_create.project_id)
+            if not project:
+                raise HTTPException(status_code=404, detail="Project not found")
+            webhook_create.organization_id = project.organization_id
+
         webhook_model = Webhook(**webhook_create.model_dump())
         created = await self.webhook_repos.create(webhook_model)
         return WebhookReadSchema.model_validate(created)
