@@ -25,6 +25,12 @@ class CardAssignmentHistory(Base):
     identity = relationship("Identity", back_populates="card_assignment_history")
 
     __table_args__ = (
+        Index(
+            "uq_active_card_assignment",
+            "card_id",
+            unique=True,
+            postgresql_where=unassigned_at.is_(None),
+        ),
         Index("idx_card_assignment_history_card_id", "card_id"),
         Index("idx_card_assignment_history_identity_id", "identity_id"),
         Index("idx_card_assignment_history_assigned_at", "assigned_at"),

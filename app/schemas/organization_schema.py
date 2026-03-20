@@ -9,6 +9,8 @@ from app.models.enums.organization_type_enum import OrganizationTypeEnum
 class LazyOrganizationReadSchema(BaseModel):
     id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
     name: str = Field(..., example="Example Organization")
+    identification_number: str = Field(..., example="ORG-123456789")
+    url: Optional[str] = Field(default=None, example="https://example.com")
     type: Optional[OrganizationTypeEnum] = Field(default=None, example="Company")
     created_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
     updated_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
@@ -19,6 +21,8 @@ class LazyOrganizationReadSchema(BaseModel):
             "example": {
                 "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                 "name": "Example Organization",
+                "identification_number": "ORG-123456789",
+                "url": "https://example.com",
                 "type": "Company",
                 "created_at": "2025-01-01T00:00:00",
                 "updated_at": "2025-01-01T00:00:00",
@@ -29,6 +33,8 @@ class LazyOrganizationReadSchema(BaseModel):
 
 class OrganizationCreateSchema(BaseModel):
     name: str = Field(..., example="Example Organization")
+    identification_number: str = Field(..., example="ORG-123456789")
+    url: Optional[str] = Field(default=None, example="https://example.com")
     type: Optional[OrganizationTypeEnum] = Field(
         default=OrganizationTypeEnum.COMPANY, example="Company"
     )
@@ -46,6 +52,8 @@ class OrganizationCreateSchema(BaseModel):
 
 class OrganizationUpdateSchema(BaseModel):
     name: Optional[str] = Field(default=None, example="Example Organization")
+    identification_number: Optional[str] = Field(default=None, example="ORG-123456789")
+    url: Optional[str] = Field(default=None, example="https://example.com")
     type: Optional[OrganizationTypeEnum] = Field(default=None, example="Company")
 
     model_config = ConfigDict(
@@ -70,6 +78,8 @@ from app.schemas.card_schema import LazyCardReadSchema
 class OrganizationReadSchema(BaseModel):
     id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
     name: str = Field(..., example="Example Organization")
+    identification_number: str = Field(..., example="ORG-123456789")
+    url: Optional[str] = Field(default=None, example="https://example.com")
     type: Optional[OrganizationTypeEnum] = Field(default=None, example="Company")
     created_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
     updated_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
@@ -85,6 +95,8 @@ class OrganizationReadSchema(BaseModel):
             "example": {
                 "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                 "name": "Example Organization",
+                "identification_number": "ORG-123456789",
+                "url": "https://example.com",
                 "type": "Company",
                 "created_at": "2025-01-01T00:00:00",
                 "updated_at": "2025-01-01T00:00:00",
@@ -128,3 +140,6 @@ class OrganizationReadSchema(BaseModel):
             }
         },
     )
+
+
+OrganizationReadSchema.model_rebuild()

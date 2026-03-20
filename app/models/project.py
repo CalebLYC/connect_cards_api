@@ -9,6 +9,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+from sqlalchemy.schema import UniqueConstraint
 from app.models.base import Base
 
 
@@ -27,7 +28,10 @@ class Project(Base):
     events = relationship("Event", back_populates="project")
     readers = relationship("Reader", back_populates="project")
 
-    __table_args__ = (Index("idx_projects_organization_id", "organization_id"),)
+    __table_args__ = (
+        UniqueConstraint("name", "organization_id", name="uq_project_name_org_id"),
+        Index("idx_projects_organization_id", "organization_id"),
+    )
 
     def __repr__(self):
         return f"<Project(id={self.id}, organization_id={self.organization_id}, name={self.name}, description={self.description}, created_at={self.created_at}, updated_at={self.updated_at})>"

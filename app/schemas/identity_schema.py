@@ -122,6 +122,9 @@ class IdentityReadSchema(BaseModel):
     )
 
 
+IdentityReadSchema.model_rebuild()
+
+
 class IdentityCreateSchema(BaseModel):
     email: EmailStr = Field(..., example="jdoe@example.com")
     name: str = Field(..., example="John Doe")

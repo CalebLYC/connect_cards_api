@@ -18,7 +18,13 @@ from app.models.event import Event
 from app.models.card_assignment_history import CardAssignmentHistory
 from app.models.identity_project_permission import IdentityProjectPermission
 from app.models.reader import Reader
+
+from app.models.enums.card_status_enum import CardStatusEnum
+from app.models.enums.organization_type_enum import OrganizationTypeEnum
+from app.models.enums.sex_enum import SexEnum
+
 from app.models.base import Base
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -79,9 +85,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

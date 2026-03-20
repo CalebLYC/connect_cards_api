@@ -7,6 +7,12 @@ from app.models.identity_project_permission import IdentityProjectPermission
 from app.repositories.identity_project_permission_repository import (
     IdentityProjectPermissionRepository,
 )
+from app.repositories.project_repository import ProjectRepository
+from app.repositories.membership_repository import MembershipRepository
+from app.exceptions.card_exceptions import (
+    MembershipNotFoundException,
+    MembershipInactiveException,
+)
 from app.schemas.identity_project_permission_schema import (
     IdentityProjectPermissionReadSchema,
     LazyIdentityProjectPermissionReadSchema,
@@ -16,8 +22,38 @@ from app.schemas.identity_project_permission_schema import (
 
 
 class IdentityProjectPermissionService:
-    def __init__(self, permission_repos: IdentityProjectPermissionRepository):
+    def __init__(
+        self,
+        permission_repos: IdentityProjectPermissionRepository,
+        project_repos: ProjectRepository = None,
+        membership_repos: MembershipRepository = None,
+    ):
         self.permission_repos = permission_repos
+        self.project_repos = project_repos
+        self.membership_repos = membership_repos
+
+    async def _verify_membership(self, identity_id: uuid.UUID, project_id: uuid.UUID):
+        """
+        Private helper to verify that an identity has an active membership
+        in the organization associated with the project.
+        """
+        if not self.project_repos or not self.membership_repos:
+            return  # Skip if repositories not provided (e.g. in minimal tests)
+
+        project = await self.project_repos.find_by_id(project_id)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Project '{project_id}' not found.",
+            )
+
+        membership = await self.membership_repos.find_by_identity_and_organization(
+            identity_id, project.organization_id
+        )
+        if not membership:
+            raise MembershipNotFoundException(identity_id, project.organization_id)
+        if membership.status != "active":
+            raise MembershipInactiveException(identity_id, project.organization_id)
 
     async def get_permission(
         self, permission_id: str, eager: bool = True
@@ -55,6 +91,11 @@ class IdentityProjectPermissionService:
         self, permission_create: IdentityProjectPermissionCreateSchema
     ) -> LazyIdentityProjectPermissionReadSchema:
         try:
+            # Check Membership before creation
+            await self._verify_membership(
+                permission_create.identity_id, permission_create.project_id
+            )
+
             permission_model = IdentityProjectPermission(
                 **permission_create.model_dump()
             )
@@ -66,6 +107,10 @@ class IdentityProjectPermissionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Unknown identity or project id",
             )
+        except MembershipNotFoundException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
+        except MembershipInactiveException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
 
     async def update_permission(
         self,
@@ -79,6 +124,18 @@ class IdentityProjectPermissionService:
                     status_code=404, detail="Permission record not found"
                 )
 
+            # Check Membership if 'allowed' is True or being set to True
+            new_allowed = (
+                permission_update.allowed
+                if permission_update.allowed is not None
+                else permission.allowed
+            )
+            new_identity_id = permission_update.identity_id or permission.identity_id
+            new_project_id = permission_update.project_id or permission.project_id
+
+            if new_allowed:
+                await self._verify_membership(new_identity_id, new_project_id)
+
             update_data = permission_update.model_dump(exclude_unset=True)
             for key, value in update_data.items():
                 setattr(permission, key, value)
@@ -91,6 +148,10 @@ class IdentityProjectPermissionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Unknown identity or project id",
             )
+        except MembershipNotFoundException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
+        except MembershipInactiveException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
 
     async def delete_permission(self, permission_id: str) -> None:
         permission = await self.permission_repos.find_by_id(permission_id)
@@ -149,6 +210,9 @@ class IdentityProjectPermissionService:
             if isinstance(project_id, str):
                 project_id = uuid.UUID(project_id)
 
+            # 0. Check Membership
+            await self._verify_membership(identity_id, project_id)
+
             permission = await self.permission_repos.find_by_identity_and_project(
                 identity_id, project_id
             )
@@ -170,3 +234,7 @@ class IdentityProjectPermissionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid identity_id or project_id",
             )
+        except MembershipNotFoundException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
+        except MembershipInactiveException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)

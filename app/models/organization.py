@@ -9,6 +9,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+from sqlalchemy.schema import UniqueConstraint
+
 from app.models.base import Base
 from app.models.enums.organization_type_enum import OrganizationTypeEnum
 
@@ -18,6 +20,9 @@ class Organization(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
+    identification_number = Column(String, nullable=False)
+    url = Column(String, nullable=True)
+
     type = Column(
         SqlEnum(OrganizationTypeEnum), default=OrganizationTypeEnum.COMPANY.value
     )
@@ -29,6 +34,14 @@ class Organization(Base):
     readers = relationship("Reader", back_populates="organization")
     users = relationship("User", back_populates="organization")
     issued_cards = relationship("Card", back_populates="issuer_organization")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "identification_number",
+            name="uq_organization_name_identification_number",
+        ),
+    )
 
     def __repr__(self):
         return f"<Organization(id={self.id}, name={self.name}, type={self.type}, created_at={self.created_at}, updated_at={self.updated_at})>"

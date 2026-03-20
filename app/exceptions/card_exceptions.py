@@ -64,3 +64,19 @@ class CardNotActiveException(Exception):
         self.card_uid = card_uid
         self.message = f"Card with UID '{self.card_uid}' is not currently active."
         super().__init__(self.message)
+
+
+class MembershipNotFoundException(Exception):
+    def __init__(self, identity_id, organization_id):
+        self.identity_id = identity_id
+        self.organization_id = organization_id
+        self.message = f"Identity '{self.identity_id}' has no membership in organization '{self.organization_id}'."
+        super().__init__(self.message)
+
+
+class MembershipInactiveException(Exception):
+    def __init__(self, identity_id, organization_id):
+        self.identity_id = identity_id
+        self.organization_id = organization_id
+        self.message = f"Identity '{self.identity_id}' has an inactive membership in organization '{self.organization_id}'."
+        super().__init__(self.message)

@@ -112,8 +112,14 @@ def get_setup_service(
 # NFC Service Providers
 def get_card_service(
     card_repos: CardRepository = Depends(get_card_repository),
+    membership_repos: MembershipRepository = Depends(get_membership_repository),
+    identity_repos: IdentityRepository = Depends(get_identity_repository),
 ) -> CardService:
-    return CardService(card_repos=card_repos)
+    return CardService(
+        card_repos=card_repos,
+        membership_repos=membership_repos,
+        identity_repos=identity_repos,
+    )
 
 
 def get_reader_service(
@@ -170,5 +176,11 @@ def get_identity_project_permission_service(
     permission_repos: IdentityProjectPermissionRepository = Depends(
         get_identity_project_permission_repository
     ),
+    project_repos: ProjectRepository = Depends(get_project_repository),
+    membership_repos: MembershipRepository = Depends(get_membership_repository),
 ) -> IdentityProjectPermissionService:
-    return IdentityProjectPermissionService(permission_repos=permission_repos)
+    return IdentityProjectPermissionService(
+        permission_repos=permission_repos,
+        project_repos=project_repos,
+        membership_repos=membership_repos,
+    )

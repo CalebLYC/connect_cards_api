@@ -5,6 +5,9 @@ from sqlalchemy.exc import IntegrityError
 from app.models.card import Card
 from app.models.card_assignment_history import CardAssignmentHistory
 from app.repositories.card_repository import CardRepository
+from app.repositories.membership_repository import MembershipRepository
+from app.repositories.identity_repository import IdentityRepository
+from app.services.nfc.identity_service import IdentityService
 from app.schemas.card_schema import (
     CardReadSchema,
     LazyCardReadSchema,
@@ -14,6 +17,7 @@ from app.schemas.card_schema import (
 from app.schemas.identity_schema import LazyIdentityReadSchema
 from app.exceptions.card_exceptions import (
     CardNotFoundException,
+    CardInactiveException,
     UnauthorizedAccessException,
     IdentityNotAssignedException,
     ProjectNotFoundException,
@@ -21,6 +25,8 @@ from app.exceptions.card_exceptions import (
     InvalidActivationCodeException,
     ActivationCodeExpiredException,
     CardNotActiveException,
+    MembershipNotFoundException,
+    MembershipInactiveException,
 )
 from app.schemas.nfc_schema import (
     ScanCardResponse,
@@ -32,8 +38,33 @@ import datetime
 
 
 class CardService:
-    def __init__(self, card_repos: CardRepository):
+    def __init__(
+        self,
+        card_repos: CardRepository,
+        membership_repos: MembershipRepository = None,
+        identity_repos: IdentityRepository = None,
+    ):
         self.card_repos = card_repos
+        self.membership_repos = membership_repos
+        self.identity_repos = identity_repos
+
+    async def _verify_membership(
+        self, identity_id: uuid.UUID, organization_id: uuid.UUID
+    ):
+        """
+        Private helper to verify that an identity has an active membership
+        in the organization.
+        """
+        if not self.membership_repos:
+            return  # Skip if repository not provided (e.g. in minimal tests)
+
+        membership = await self.membership_repos.find_by_identity_and_organization(
+            identity_id, organization_id
+        )
+        if not membership:
+            raise MembershipNotFoundException(identity_id, organization_id)
+        if membership.status != "active":
+            raise MembershipInactiveException(identity_id, organization_id)
 
     async def get_card(
         self, card_id: str, eager: bool = True
@@ -78,6 +109,11 @@ class CardService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Card with this UID already exists",
                 )
+            if card_create.identity_id and card_create.issuer_organization_id:
+                await self._verify_membership(
+                    card_create.identity_id, card_create.issuer_organization_id
+                )
+
             activation_code = self.generate_activation_code()
             card_model = Card(
                 **card_create.model_dump(), activation_code=activation_code
@@ -90,6 +126,10 @@ class CardService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Unknown identity id or issuer organization id",
             )
+        except MembershipNotFoundException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
+        except MembershipInactiveException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
 
     async def update_card(
         self, card_id: str, card_update: CardUpdateSchema
@@ -107,6 +147,19 @@ class CardService:
                         detail="Card with this UID already exists",
                     )
 
+            # Check Membership if identity_id or issuer_organization_id is changing
+            new_identity_id = card_update.identity_id or card.identity_id
+            new_org_id = (
+                card_update.issuer_organization_id or card.issuer_organization_id
+            )
+
+            if (
+                new_identity_id
+                and new_org_id
+                and (card_update.identity_id or card_update.issuer_organization_id)
+            ):
+                await self._verify_membership(new_identity_id, new_org_id)
+
             update_data = card_update.model_dump(exclude_unset=True)
             for key, value in update_data.items():
                 setattr(card, key, value)
@@ -119,6 +172,10 @@ class CardService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Unknown identity id or issuer organization id",
             )
+        except MembershipNotFoundException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
+        except MembershipInactiveException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
 
     async def delete_card(self, card_id: str) -> None:
         card = await self.card_repos.find_by_id(card_id)
@@ -159,6 +216,10 @@ class CardService:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
         except UnauthorizedAccessException as e:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
+        except MembershipNotFoundException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
+        except MembershipInactiveException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
         except CardAlreadyActiveException as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=e.message
@@ -196,6 +257,20 @@ class CardService:
                     detail="Card does not belong to the authenticated organization",
                 )"""
 
+            # 0. Check Membership in Issuer Organization
+            await self._verify_membership(
+                request.identity_id, card.issuer_organization_id
+            )
+
+            # 0b. Explicitly check if Identity exists to avoid confusing IntegrityErrors
+            if self.identity_repos:
+                identity = await self.identity_repos.find_by_id(request.identity_id)
+                if not identity:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail=f"L'identité '{request.identity_id}' n'existe pas.",
+                    )
+
             # 1. Check if already active
             if card.status == "active":
                 raise CardAlreadyActiveException(request.card_uid)
@@ -216,7 +291,15 @@ class CardService:
                     raise ActivationCodeExpiredException(request.card_uid)
 
             # 4. Atomic Update
-            # Add history record
+            # Close existing active assignment if any (healing inconsistent state)
+            existing_history = await self.card_repos.get_active_assignment(card.id)
+            if existing_history:
+                existing_history.unassigned_at = datetime.datetime.now(
+                    datetime.timezone.utc
+                ).replace(tzinfo=None)
+                self.card_repos.db.add(existing_history)
+
+            # Add new history record
             history = CardAssignmentHistory(
                 card_id=card.id, identity_id=request.identity_id
             )
@@ -231,10 +314,10 @@ class CardService:
             return CardActivationResponse(
                 success=True, card=LazyCardReadSchema.model_validate(updated)
             )
-        except IntegrityError:
+        except IntegrityError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="L'identifiant d'identité fourni n'existe pas.",
+                detail=f"Erreur d'intégrité base de données: {str(e.orig)}",
             )
         except CardNotFoundException as e:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
@@ -250,6 +333,10 @@ class CardService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=e.message
             )
+        except MembershipNotFoundException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
+        except MembershipInactiveException as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
 
     async def revoke_card(self, card_uid: str) -> CardActivationResponse:
         """

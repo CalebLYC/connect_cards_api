@@ -5,6 +5,10 @@ from sqlalchemy.orm import selectinload
 import uuid
 
 from app.models.membership import Membership
+from app.exceptions.card_exceptions import (
+    MembershipNotFoundException,
+    MembershipInactiveException,
+)
 
 
 class MembershipRepository:
@@ -47,12 +51,9 @@ class MembershipRepository:
     async def find_many_eager(
         self, filters: dict = None, skip: int = 0, limit: int = 100
     ) -> List[Membership]:
-        stmt = (
-            select(Membership)
-            .options(
-                selectinload(Membership.identity),
-                selectinload(Membership.organization),
-            )
+        stmt = select(Membership).options(
+            selectinload(Membership.identity),
+            selectinload(Membership.organization),
         )
         if filters:
             for key, value in filters.items():
@@ -106,3 +107,17 @@ class MembershipRepository:
         stmt = delete(Membership)
         await self.db.execute(stmt)
         await self.db.commit()
+
+    async def find_by_identity_and_organization(
+        self, identity_id: Any, organization_id: Any
+    ) -> Optional[Membership]:
+        if isinstance(identity_id, str):
+            identity_id = uuid.UUID(identity_id)
+        if isinstance(organization_id, str):
+            organization_id = uuid.UUID(organization_id)
+        stmt = select(Membership).where(
+            Membership.identity_id == identity_id,
+            Membership.organization_id == organization_id,
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()

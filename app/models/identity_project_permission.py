@@ -9,6 +9,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+from sqlalchemy.schema import UniqueConstraint
 from app.models.base import Base
 
 
@@ -26,6 +27,9 @@ class IdentityProjectPermission(Base):
     project = relationship("Project", back_populates="permissions")
 
     __table_args__ = (
+        UniqueConstraint(
+            "identity_id", "project_id", name="uq_identity_project_permission"
+        ),
         Index("idx_identity_project_permissions_identity_id", "identity_id"),
         Index("idx_identity_project_permissions_project_id", "project_id"),
     )

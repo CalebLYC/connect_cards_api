@@ -16,6 +16,8 @@ from app.exceptions.card_exceptions import (
     CardInactiveException,
     IdentityNotAssignedException,
     ProjectNotFoundException,
+    MembershipNotFoundException,
+    MembershipInactiveException,
 )
 
 
@@ -183,7 +185,14 @@ class CardRepository:
         if card.status != "active":
             raise CardInactiveException(card_uid)
 
-        # 5. Check Permissions
+        # 5. Check Membership
+        if not membership:
+            raise MembershipNotFoundException(identity.id, project.organization_id)
+
+        if membership.status != "active":
+            raise MembershipInactiveException(identity.id, project.organization_id)
+
+        # 6. Check Permissions
         if not permission or not permission.allowed:
             raise UnauthorizedAccessException(identity.id, project_id)
 

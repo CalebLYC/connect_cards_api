@@ -9,6 +9,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.orm import relationship
 import datetime
 
@@ -30,6 +31,9 @@ class Membership(Base):
     organization = relationship("Organization", back_populates="memberships")
 
     __table_args__ = (
+        UniqueConstraint(
+            "identity_id", "organization_id", name="uq_membership_identity_org"
+        ),
         Index("idx_memberships_identity_id", "identity_id"),
         Index("idx_memberships_organization_id", "organization_id"),
     )

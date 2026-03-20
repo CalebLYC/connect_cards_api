@@ -3,6 +3,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 from uuid import UUID
 
+from app.models.enums.card_status_enum import CardStatusEnum
+
 
 class LazyCardReadSchema(BaseModel):
     id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
@@ -10,7 +12,7 @@ class LazyCardReadSchema(BaseModel):
     identity_id: Optional[UUID] = Field(
         default=None, example="04bcf3f5-cde5-4d27-8a20-2f50076043c5"
     )
-    status: str = Field(..., example="pending")
+    status: CardStatusEnum = Field(..., example="pending")
     activation_code: Optional[str] = Field(default=None, example="123456")
     issuer_organization_id: Optional[UUID] = Field(
         default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
@@ -47,7 +49,7 @@ class CardReadSchema(BaseModel):
     identity_id: Optional[UUID] = Field(
         default=None, example="04bcf3f5-cde5-4d27-8a20-2f50076043c5"
     )
-    status: str = Field(..., example="pending")
+    status: CardStatusEnum = Field(..., example="pending")
     activation_code: Optional[str] = Field(default=None, example="123456")
     issuer_organization_id: Optional[UUID] = Field(
         default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
@@ -80,6 +82,8 @@ class CardReadSchema(BaseModel):
                 "issuer_organization": {
                     "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                     "name": "Example Organization",
+                    "identification_number": "ORG-123456789",
+                    "url": "https://example.com",
                     "type": "Company",
                     "created_at": "2025-01-01T00:00:00",
                     "updated_at": "2025-01-01T00:00:00",
@@ -95,7 +99,7 @@ class CardCreateSchema(BaseModel):
     identity_id: UUID = Field(
         default=None, example="04bcf3f5-cde5-4d27-8a20-2f50076043c5"
     )
-    status: Optional[str] = Field(default="pending", example="pending")
+    status: Optional[CardStatusEnum] = Field(default="pending", example="pending")
     issuer_organization_id: Optional[UUID] = Field(
         default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
     )
@@ -118,7 +122,7 @@ class CardUpdateSchema(BaseModel):
     identity_id: Optional[UUID] = Field(
         default=None, example="04bcf3f5-cde5-4d27-8a20-2f50076043c5"
     )
-    status: Optional[str] = Field(default=None, example="active")
+    status: Optional[CardStatusEnum] = Field(default=None, example="active")
     activation_code: Optional[str] = Field(default=None, example="123456")
     issuer_organization_id: Optional[UUID] = Field(
         default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
