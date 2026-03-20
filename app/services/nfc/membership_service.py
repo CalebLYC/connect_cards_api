@@ -9,7 +9,11 @@ from app.schemas.membership_schema import (
     LazyMembershipReadSchema,
     MembershipUpdateSchema,
 )
-from app.services.nfc.webhook_service import WebhookService
+from app.services.nfc.event_dispatcher import EventDispatcher
+from app.repositories.event_repository import EventRepository
+from app.models.event import Event
+from app.models.enums.event_type_enum import EventTypeEnum
+from fastapi import BackgroundTasks
 
 
 class MembershipService:
@@ -17,11 +21,11 @@ class MembershipService:
         self,
         membership_repos: MembershipRepository,
         event_repos: EventRepository = None,
-        webhook_service: WebhookService = None,
+        event_dispatcher: EventDispatcher = None,
     ):
         self.membership_repos = membership_repos
         self.event_repos = event_repos
-        self.webhook_service = webhook_service
+        self.event_dispatcher = event_dispatcher
 
     def _log_event(
         self,
@@ -45,14 +49,16 @@ class MembershipService:
             )
             created_event = await self.event_repos.create(event)
 
-            # Trigger webhooks if service is available
-            if self.webhook_service and background_tasks:
-                await self.webhook_service.trigger_webhooks(
+            created_event = await self.event_repos.create(event)
+
+            # Trigger dispatch if dispatcher is available
+            if self.event_dispatcher and background_tasks:
+                await self.event_dispatcher.dispatch_event(
                     created_event, background_tasks
                 )
-            elif self.webhook_service:
+            elif self.event_dispatcher:
                 import asyncio
-                await self.webhook_service.trigger_webhooks(created_event, background_tasks)
+                await self.event_dispatcher.dispatch_event(created_event, background_tasks)
 
         if background_tasks:
             background_tasks.add_task(_save_and_trigger_event)

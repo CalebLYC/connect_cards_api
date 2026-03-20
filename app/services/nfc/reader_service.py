@@ -14,7 +14,7 @@ from app.schemas.reader_schema import (
 from app.repositories.event_repository import EventRepository
 from app.models.event import Event
 from app.models.enums.event_type_enum import EventTypeEnum
-from app.services.nfc.webhook_service import WebhookService
+from app.services.nfc.event_dispatcher import EventDispatcher
 
 
 class ReaderService:
@@ -24,13 +24,13 @@ class ReaderService:
         project_repos: ProjectRepository,
         organization_repos: OrganizationRepository,
         event_repos: EventRepository = None,
-        webhook_service: WebhookService = None,
+        event_dispatcher: EventDispatcher = None,
     ):
         self.reader_repos = reader_repos
         self.project_repos = project_repos
         self.organization_repos = organization_repos
         self.event_repos = event_repos
-        self.webhook_service = webhook_service
+        self.event_dispatcher = event_dispatcher
 
     def _log_event(
         self,
@@ -55,15 +55,15 @@ class ReaderService:
             )
             created_event = await self.event_repos.create(event)
 
-            # Trigger webhooks if service is available
-            if self.webhook_service and background_tasks:
-                await self.webhook_service.trigger_webhooks(
+            # Trigger dispatch if dispatcher is available
+            if self.event_dispatcher and background_tasks:
+                await self.event_dispatcher.dispatch_event(
                     created_event, background_tasks
                 )
-            elif self.webhook_service:
+            elif self.event_dispatcher:
                 import asyncio
 
-                await self.webhook_service.trigger_webhooks(
+                await self.event_dispatcher.dispatch_event(
                     created_event, background_tasks
                 )
 

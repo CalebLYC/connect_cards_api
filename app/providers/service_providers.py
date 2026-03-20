@@ -36,6 +36,7 @@ from app.services.nfc.identity_project_permission_service import (
     IdentityProjectPermissionService,
 )
 from app.services.nfc.webhook_service import WebhookService
+from app.services.nfc.event_dispatcher import EventDispatcher
 
 from app.services.nfc.identity_service import IdentityService
 from app.services.auth.permission_service import PermissionService
@@ -78,15 +79,22 @@ def get_webhook_service(
     return WebhookService(webhook_repos=webhook_repos)
 
 
+def get_event_dispatcher(
+    webhook_repos: WebhookRepository = Depends(get_webhook_repository),
+    webhook_service: WebhookService = Depends(get_webhook_service),
+) -> EventDispatcher:
+    return EventDispatcher(webhook_repos=webhook_repos, webhook_service=webhook_service)
+
+
 def get_identity_service(
     identity_repos: IdentityRepository = Depends(get_identity_repository),
     event_repos: EventRepository = Depends(get_event_repository),
-    webhook_service: WebhookService = Depends(get_webhook_service),
+    event_dispatcher: EventDispatcher = Depends(get_event_dispatcher),
 ) -> IdentityService:
     return IdentityService(
         identity_repos=identity_repos,
         event_repos=event_repos,
-        webhook_service=webhook_service,
+        event_dispatcher=event_dispatcher,
     )
 
 
@@ -130,14 +138,14 @@ def get_card_service(
     membership_repos: MembershipRepository = Depends(get_membership_repository),
     identity_repos: IdentityRepository = Depends(get_identity_repository),
     event_repos: EventRepository = Depends(get_event_repository),
-    webhook_service: WebhookService = Depends(get_webhook_service),
+    event_dispatcher: EventDispatcher = Depends(get_event_dispatcher),
 ) -> CardService:
     return CardService(
         card_repos=card_repos,
         membership_repos=membership_repos,
         identity_repos=identity_repos,
         event_repos=event_repos,
-        webhook_service=webhook_service,
+        event_dispatcher=event_dispatcher,
     )
 
 
@@ -146,14 +154,14 @@ def get_reader_service(
     project_repos: ProjectRepository = Depends(get_project_repository),
     organization_repos: OrganizationRepository = Depends(get_organization_repository),
     event_repos: EventRepository = Depends(get_event_repository),
-    webhook_service: WebhookService = Depends(get_webhook_service),
+    event_dispatcher: EventDispatcher = Depends(get_event_dispatcher),
 ) -> ReaderService:
     return ReaderService(
         reader_repos=reader_repos,
         project_repos=project_repos,
         organization_repos=organization_repos,
         event_repos=event_repos,
-        webhook_service=webhook_service,
+        event_dispatcher=event_dispatcher,
     )
 
 
@@ -161,13 +169,13 @@ def get_event_service(
     event_repos: EventRepository = Depends(get_event_repository),
     reader_repos: ReaderRepository = Depends(get_reader_repository),
     project_repos: ProjectRepository = Depends(get_project_repository),
-    webhook_service: WebhookService = Depends(get_webhook_service),
+    event_dispatcher: EventDispatcher = Depends(get_event_dispatcher),
 ) -> EventService:
     return EventService(
         event_repos=event_repos,
         reader_repos=reader_repos,
         project_repos=project_repos,
-        webhook_service=webhook_service,
+        event_dispatcher=event_dispatcher,
     )
 
 
@@ -194,12 +202,12 @@ def get_card_assignment_history_service(
 def get_membership_service(
     membership_repos: MembershipRepository = Depends(get_membership_repository),
     event_repos: EventRepository = Depends(get_event_repository),
-    webhook_service: WebhookService = Depends(get_webhook_service),
+    event_dispatcher: EventDispatcher = Depends(get_event_dispatcher),
 ) -> MembershipService:
     return MembershipService(
         membership_repos=membership_repos,
         event_repos=event_repos,
-        webhook_service=webhook_service,
+        event_dispatcher=event_dispatcher,
     )
 
 
@@ -210,12 +218,12 @@ def get_identity_project_permission_service(
     project_repos: ProjectRepository = Depends(get_project_repository),
     membership_repos: MembershipRepository = Depends(get_membership_repository),
     event_repos: EventRepository = Depends(get_event_repository),
-    webhook_service: WebhookService = Depends(get_webhook_service),
+    event_dispatcher: EventDispatcher = Depends(get_event_dispatcher),
 ) -> IdentityProjectPermissionService:
     return IdentityProjectPermissionService(
         permission_repos=permission_repos,
         project_repos=project_repos,
         membership_repos=membership_repos,
         event_repos=event_repos,
-        webhook_service=webhook_service,
+        event_dispatcher=event_dispatcher,
     )

@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class EventTypeEnum(str, Enum):
+    CARD_SCANNED = "card_scanned"
     ACCESS_DENIED = "access_denied"
     ACCESS_GRANTED = "access_granted"
     CARD_ASSIGNED = "card_assigned"

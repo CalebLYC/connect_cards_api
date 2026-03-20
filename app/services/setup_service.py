@@ -1,8 +1,10 @@
 from starlette.exceptions import HTTPException
+import datetime
 
 from app.core.config import Settings
 from app.core.security import SecurityUtils
-#from app.models.permission import Permission
+
+# from app.models.permission import Permission
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.user import User
@@ -26,28 +28,32 @@ class SetupService:
         self.permission_repos = permission_repos
         self.settings = settings
 
-
     async def setup_superadmin(self) -> dict:
         """Set up the superadmin user.
-            Args:
-                None
-            Returns:
-                dict: Success message.
+        Args:
+            None
+        Returns:
+            dict: Success message.
         """
         superadmin_email = self.settings.admin_email or "superadmin@example.com"
         superadmin_password = self.settings.admin_password
         if not superadmin_password:
             raise ValueError("Admin password must be set.")
-        
+
         # Check if superadmin user already exists
         existing = await self.user_repos.find_by_email(superadmin_email)
         if existing:
             return {"message": "Superadmin user setup successfully."}
-        
+
         # Create superadmin role if it doesn't exist
         superadmin_role = await self.role_repos.find_by_name("superadmin")
         if not superadmin_role:
-            superadmin_role = await self.role_repos.create(Role(name="superadmin", description="Superadmin role with all permissions"))
+            superadmin_role = await self.role_repos.create(
+                Role(
+                    name="superadmin",
+                    description="Superadmin role with all permissions",
+                )
+            )
 
         """# Create superadmin permissions if they don't exist
         superadmin_permission = await self.permission_repos.find_by_code("superadmin")
@@ -62,33 +68,40 @@ class SetupService:
         )
         db_user = await self.user_repos.create(user=user_create)
         if not db_user:
-            raise HTTPException(status_code=500, detail="Failed to create superadmin user.")
-        
+            raise HTTPException(
+                status_code=500, detail="Failed to create superadmin user."
+            )
+
         # Update the created user to have superadmin role and permissions
-        user = await self.user_repos.find_by_id(id= db_user.id)
+        user = await self.user_repos.find_by_id(id=db_user.id)
         if not user:
             raise HTTPException(status_code=500, detail="Failed to upgrade privileges.")
         user.is_verified = True
         user.is_active = True
         user.roles.append(superadmin_role)
-        #user.permissions.append(superadmin_permission)
+        # user.permissions.append(superadmin_permission)
         await self.user_repos.update(user)
-        
+
         return {"message": "Superadmin user setup successfully."}
-    
-    
+
     async def setup_roles_and_permissions(self) -> dict:
         """Set up roles and permissions.
-            Args:
-                None
-            Returns:
-                dict: Success message.
+        Args:
+            None
+        Returns:
+            dict: Success message.
         """
         # Create default roles if they don't exist
         roles = [
-            {"name": "superadmin", "description": "Superadmin role with all permissions"},
+            {
+                "name": "superadmin",
+                "description": "Superadmin role with all permissions",
+            },
             {"name": "admin", "description": "Admin role with elevated permissions"},
-            {"name": "user", "description": "Regular user role with limited permissions"},
+            {
+                "name": "user",
+                "description": "Regular user role with limited permissions",
+            },
         ]
         for role_data in roles:
             role = await self.role_repos.find_by_name(role_data["name"])
@@ -99,11 +112,29 @@ class SetupService:
         permissions = [
             {"code": "roles:manage", "description": "Permission to manage roles"},
             {"code": "admin:manage", "description": "Permission to manage admin users"},
-            {"code": "user:manage", "description": "Permission to manage regular users"},
+            {
+                "code": "user:manage",
+                "description": "Permission to manage regular users",
+            },
         ]
         for permission_data in permissions:
-            permission = await self.permission_repos.find_by_code(permission_data["code"])
+            permission = await self.permission_repos.find_by_code(
+                permission_data["code"]
+            )
             if not permission:
                 await self.permission_repos.create(Permission(**permission_data))
 
         return {"message": "Roles and permissions setup successfully."}
+
+    async def webhook_test(self) -> dict:
+        """Test webhook functionality.
+        Args:
+            None
+        Returns:
+            dict: Success message.
+        """
+        print("Webhook test successful at " + datetime.datetime.now().isoformat())
+        return {
+            "message": "Webhook test successful at "
+            + datetime.datetime.now().isoformat()
+        }

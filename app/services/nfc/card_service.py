@@ -39,7 +39,7 @@ from app.schemas.nfc_schema import (
 )
 from app.core.config import Settings
 import datetime
-from app.services.nfc.webhook_service import WebhookService
+from app.services.nfc.event_dispatcher import EventDispatcher
 
 
 class CardService:
@@ -49,13 +49,13 @@ class CardService:
         membership_repos: MembershipRepository = None,
         identity_repos: IdentityRepository = None,
         event_repos: EventRepository = None,
-        webhook_service: WebhookService = None,
+        event_dispatcher: EventDispatcher = None,
     ):
         self.card_repos = card_repos
         self.membership_repos = membership_repos
         self.identity_repos = identity_repos
         self.event_repos = event_repos
-        self.webhook_service = webhook_service
+        self.event_dispatcher = event_dispatcher
 
     def _log_event(
         self,
@@ -82,18 +82,17 @@ class CardService:
             )
             created_event = await self.event_repos.create(event)
 
-            # Trigger webhooks if service is available
-            if self.webhook_service and background_tasks:
-                await self.webhook_service.trigger_webhooks(
+            # Trigger dispatch if dispatcher is available
+            if self.event_dispatcher and background_tasks:
+                await self.event_dispatcher.dispatch_event(
                     created_event, background_tasks
                 )
-            elif self.webhook_service:
+            elif self.event_dispatcher:
                 # If no background_tasks (e.g. internal call), we still want to trigger
                 # but we'd need a separate way to handle the async dispatch if not in a request context.
-                # For now, we assume background_tasks is preferred.
                 import asyncio
 
-                await self.webhook_service.trigger_webhooks(
+                await self.event_dispatcher.dispatch_event(
                     created_event, background_tasks
                 )  # This might still need bg tasks
 
@@ -391,6 +390,15 @@ class CardService:
         reader_id: Optional[Any] = None,
         background_tasks: Optional[BackgroundTasks] = None,
     ) -> ScanCardResponse:
+        # 1. Immediate scan registration (CARD_SCANNED) regardless of auth outcome
+        self._log_event(
+            event_type=EventTypeEnum.CARD_SCANNED,
+            reader_id=reader_id,
+            project_id=project_id,
+            metadata_desc={"card_uid": card_uid, "action": "scan_card"},
+            background_tasks=background_tasks,
+        )
+
         try:
             result = await self.card_repos.get_card_with_access_details(
                 card_uid, project_id

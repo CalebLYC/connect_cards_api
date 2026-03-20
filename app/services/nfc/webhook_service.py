@@ -59,32 +59,6 @@ class WebhookService:
             raise HTTPException(status_code=404, detail="Webhook not found")
         await self.webhook_repos.delete(webhook)
 
-    async def trigger_webhooks(self, event: Event, background_tasks: BackgroundTasks):
-        """
-        Fetches all active webhooks for the given event type and adds them to background tasks.
-        """
-        webhooks = await self.webhook_repos.get_active_webhooks_by_event_type(
-            event.event_type
-        )
-        if not webhooks:
-            return
-
-        payload = {
-            "event_id": str(event.id),
-            "event_type": event.event_type,
-            "card_id": str(event.card_id) if event.card_id else None,
-            "reader_id": str(event.reader_id) if event.reader_id else None,
-            "project_id": str(event.project_id) if event.project_id else None,
-            "metadata": event.metadata_desc,
-            "created_at": event.created_at.isoformat() if event.created_at else None,
-        }
-
-        for webhook in webhooks:
-            # We pass the primitives to background task to avoid DB session issues
-            background_tasks.add_task(
-                self.send_webhook, str(webhook.url), webhook.secret, payload
-            )
-
     @staticmethod
     async def send_webhook(url: str, secret: Optional[str], payload: Dict[str, Any]):
         """
@@ -100,13 +74,30 @@ class WebhookService:
             signature = hmac.new(
                 secret.encode(), body.encode(), hashlib.sha256
             ).hexdigest()
-            headers["X-Hub-Signature-256"] = f"sha256={signature}"
+            headers["X-Signature"] = signature
 
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.post(url, headers=headers, content=body)
-                response.raise_for_status()
-        except httpx.HTTPError as e:
-            print(f"Webhook delivery failed to {url}: {e}")
-        except Exception as e:
-            print(f"Unexpected error during webhook delivery to {url}: {e}")
+        max_retries = 3
+        base_delay = 1  # seconds
+
+        for attempt in range(max_retries + 1):
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    response = await client.post(url, headers=headers, content=body)
+                    response.raise_for_status()
+                    return  # Success, exit the loop
+            except httpx.HTTPError as e:
+                import asyncio
+
+                if attempt < max_retries:
+                    delay = base_delay * (2**attempt)  # 1s, 2s, 4s
+                    print(
+                        f"Webhook delivery failed to {url} (attempt {attempt + 1}/{max_retries + 1}): {e}. Retrying in {delay}s..."
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    print(
+                        f"Webhook delivery permanently failed to {url} after {max_retries + 1} attempts: {e}"
+                    )
+            except Exception as e:
+                print(f"Unexpected error during webhook delivery to {url}: {e}")
+                break  # Don't retry on unexpected exceptions (like coding errors)

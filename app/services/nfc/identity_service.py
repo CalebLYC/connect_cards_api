@@ -8,7 +8,7 @@ from app.schemas.identity_schema import (
     LazyIdentityReadSchema,
 )
 from fastapi import HTTPException, status, BackgroundTasks
-from app.services.nfc.webhook_service import WebhookService
+from app.services.nfc.event_dispatcher import EventDispatcher
 
 
 class IdentityService:
@@ -16,11 +16,11 @@ class IdentityService:
         self,
         identity_repos: IdentityRepository,
         event_repos: EventRepository = None,
-        webhook_service: WebhookService = None,
+        event_dispatcher: EventDispatcher = None,
     ):
         self.identity_repos = identity_repos
         self.event_repos = event_repos
-        self.webhook_service = webhook_service
+        self.event_dispatcher = event_dispatcher
 
     def _log_event(
         self,
@@ -42,14 +42,14 @@ class IdentityService:
             )
             created_event = await self.event_repos.create(event)
 
-            # Trigger webhooks if service is available
-            if self.webhook_service and background_tasks:
-                await self.webhook_service.trigger_webhooks(
+            # Trigger dispatch if dispatcher is available
+            if self.event_dispatcher and background_tasks:
+                await self.event_dispatcher.dispatch_event(
                     created_event, background_tasks
                 )
-            elif self.webhook_service:
+            elif self.event_dispatcher:
                 import asyncio
-                await self.webhook_service.trigger_webhooks(created_event, background_tasks)
+                await self.event_dispatcher.dispatch_event(created_event, background_tasks)
 
         if background_tasks:
             background_tasks.add_task(_save_and_trigger_event)

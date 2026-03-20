@@ -15,7 +15,7 @@ from app.schemas.event_schema import (
 from fastapi import BackgroundTasks
 
 
-from app.services.nfc.webhook_service import WebhookService
+from app.services.nfc.event_dispatcher import EventDispatcher
 
 
 class EventService:
@@ -24,12 +24,12 @@ class EventService:
         event_repos: EventRepository,
         reader_repos: ReaderRepository,
         project_repos: ProjectRepository,
-        webhook_service: WebhookService = None,
+        event_dispatcher: EventDispatcher = None,
     ):
         self.event_repos = event_repos
         self.reader_repos = reader_repos
         self.project_repos = project_repos
-        self.webhook_service = webhook_service
+        self.event_dispatcher = event_dispatcher
 
     async def get_event(
         self, event_id: str, eager: bool = True
@@ -76,8 +76,8 @@ class EventService:
             event_model = Event(**event_create.model_dump())
             created = await self.event_repos.create(event_model)
             
-            if self.webhook_service and background_tasks:
-                await self.webhook_service.trigger_webhooks(created, background_tasks)
+            if self.event_dispatcher and background_tasks:
+                await self.event_dispatcher.dispatch_event(created, background_tasks)
 
             return LazyEventReadSchema.model_validate(created)
         except IntegrityError as e:
@@ -136,8 +136,8 @@ class EventService:
 
             updated = await self.event_repos.update(event)
 
-            if self.webhook_service and background_tasks:
-                await self.webhook_service.trigger_webhooks(updated, background_tasks)
+            if self.event_dispatcher and background_tasks:
+                await self.event_dispatcher.dispatch_event(updated, background_tasks)
 
             return LazyEventReadSchema.model_validate(updated)
         except IntegrityError as e:
