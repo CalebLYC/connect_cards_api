@@ -7,15 +7,48 @@ from app.schemas.identity_schema import (
     IdentityReadSchema,
     LazyIdentityReadSchema,
 )
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, BackgroundTasks
+from app.repositories.event_repository import EventRepository
+from app.models.event import Event
+from app.models.enums.event_type_enum import EventTypeEnum
+from typing import Optional, List, Dict, Any
 
 
 class IdentityService:
     def __init__(
         self,
         identity_repos: IdentityRepository,
+        event_repos: EventRepository = None,
     ):
         self.identity_repos = identity_repos
+        self.event_repos = event_repos
+
+    def _log_event(
+        self,
+        event_type: EventTypeEnum,
+        identity_id: Optional[Any] = None,
+        metadata_desc: Optional[Dict[str, Any]] = None,
+        background_tasks: Optional[BackgroundTasks] = None,
+    ):
+        """
+        Helper method to log events in the background for performance.
+        """
+        if not self.event_repos:
+            return
+
+        async def _save_event():
+            event = Event(
+                event_type=event_type,
+                metadata_desc=metadata_desc,
+            )
+            await self.event_repos.create(event)
+
+        if background_tasks:
+            background_tasks.add_task(_save_event)
+        else:
+            import asyncio
+
+            asyncio.create_task(_save_event())
 
     async def get_identity(
         self, identity_id: str, eager: bool = True
@@ -86,7 +119,9 @@ class IdentityService:
         return [IdentityReadSchema.model_validate(u) for u in identitys]
 
     async def create_identity(
-        self, identity_create: IdentityCreateSchema
+        self,
+        identity_create: IdentityCreateSchema,
+        background_tasks: Optional[BackgroundTasks] = None,
     ) -> IdentityReadSchema:
         """Create a new identity.
 
@@ -101,14 +136,39 @@ class IdentityService:
         """
         existing = await self.identity_repos.find_by_email(identity_create.email)
         if existing:
+            # Log failure
+            self._log_event(
+                event_type=EventTypeEnum.ACCESS_DENIED,
+                metadata_desc={
+                    "action": "create_identity",
+                    "reason": "Email already registered",
+                    "email": identity_create.email,
+                },
+                background_tasks=background_tasks,
+            )
             raise HTTPException(status_code=400, detail="Email already registered")
 
         identity_model = Identity(**identity_create.model_dump())
         created = await self.identity_repos.create(identity_model)
+
+        # Log event
+        self._log_event(
+            event_type=EventTypeEnum.IDENTITY_CREATED,
+            metadata_desc={
+                "action": "create_identity",
+                "email": created.email,
+                "identity_id": str(created.id),
+            },
+            background_tasks=background_tasks,
+        )
+
         return LazyIdentityReadSchema.model_validate(created)
 
     async def update_identity(
-        self, identity_id: str, identity_update: IdentityUpdateSchema
+        self,
+        identity_id: str,
+        identity_update: IdentityUpdateSchema,
+        background_tasks: Optional[BackgroundTasks] = None,
     ) -> LazyIdentityReadSchema:
         """Update an existing identity.
 
@@ -126,19 +186,62 @@ class IdentityService:
         """
         identity = await self.identity_repos.find_by_id(identity_id)
         if not identity:
+            # Log failure
+            self._log_event(
+                event_type=EventTypeEnum.ACCESS_DENIED,
+                metadata_desc={
+                    "action": "update_identity",
+                    "reason": "Identity not found",
+                    "identity_id": str(identity_id),
+                },
+                background_tasks=background_tasks,
+            )
             raise HTTPException(status_code=404, detail="Identity not found")
 
         update_data = identity_update.model_dump(exclude_unset=True)
         if "email" in update_data:
             existing = await self.identity_repos.find_by_email(update_data["email"])
             if existing and str(existing.id) != identity_id:
+                # Log failure
+                self._log_event(
+                    event_type=EventTypeEnum.ACCESS_DENIED,
+                    metadata_desc={
+                        "action": "update_identity",
+                        "reason": "Email already registered",
+                        "email": update_data["email"],
+                        "identity_id": str(identity_id),
+                    },
+                    background_tasks=background_tasks,
+                )
                 raise HTTPException(status_code=400, detail="Email already registered")
 
         for key, value in update_data.items():
             setattr(identity, key, value)
         updated = await self.identity_repos.update(identity)
         if not updated:
+            # Log failure
+            self._log_event(
+                event_type=EventTypeEnum.ACCESS_DENIED,
+                metadata_desc={
+                    "action": "update_identity",
+                    "reason": "Internal update failure",
+                    "identity_id": str(identity_id),
+                },
+                background_tasks=background_tasks,
+            )
             raise HTTPException(status_code=500, detail="Update failed")
+
+        # Log update
+        self._log_event(
+            event_type=EventTypeEnum.IDENTITY_UPDATED,
+            metadata_desc={
+                "action": "update_identity",
+                "email": updated.email,
+                "identity_id": str(updated.id),
+            },
+            background_tasks=background_tasks,
+        )
+
         return LazyIdentityReadSchema.model_validate(updated)
 
     """async def verify_identity(self, identity_id: str) -> LazyIdentityReadSchema:
@@ -166,7 +269,9 @@ class IdentityService:
         updated = await self.identity_repos.find_by_id(identity_id)
         return LazyIdentityReadSchema.model_validate(updated)"""
 
-    async def delete_identity(self, identity_id: str) -> None:
+    async def delete_identity(
+        self, identity_id: str, background_tasks: Optional[BackgroundTasks] = None
+    ) -> None:
         """Delete a identity by its ID.
 
         Args:
@@ -181,10 +286,30 @@ class IdentityService:
         """
         identity = await self.identity_repos.find_by_id(identity_id)
         if not identity:
+            # Log failure
+            self._log_event(
+                event_type=EventTypeEnum.ACCESS_DENIED,
+                metadata_desc={
+                    "action": "delete_identity",
+                    "reason": "Identity not found",
+                    "identity_id": str(identity_id),
+                },
+                background_tasks=background_tasks,
+            )
             raise HTTPException(status_code=404, detail="Identity not found")
-        success = await self.identity_repos.delete(
-            identity
-        )  # Updated to use model instance if repo Expects it, but wait, IdentityRepository.delete takes instance
+
+        # Log event before deletion
+        self._log_event(
+            event_type=EventTypeEnum.IDENTITY_DELETED,
+            metadata_desc={
+                "action": "delete_identity",
+                "email": identity.email,
+                "identity_id": str(identity.id),
+            },
+            background_tasks=background_tasks,
+        )
+
+        success = await self.identity_repos.delete(identity)
         return True
 
     async def delete_all_identities(self) -> None:

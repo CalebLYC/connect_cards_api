@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Path, status
+from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
 from typing import List
 from uuid import UUID
 from app.providers.auth_provider import require_permission
@@ -62,7 +62,9 @@ async def get_card_by_uid(
 async def scan_card(
     uid: str = Path(...),
     project_id: UUID = Query(...),
+    reader_id: UUID = Query(None),
     service: CardService = Depends(get_card_service),
+    background_tasks: BackgroundTasks = None,
 ):
     """
     High-performance endpoint to authorize card access to a project.
@@ -72,7 +74,9 @@ async def scan_card(
     - Identity has access to the project
     Returns authorized status and user permissions.
     """
-    return await service.scan_card(uid, project_id)
+    return await service.scan_card(
+        uid, project_id, reader_id=reader_id, background_tasks=background_tasks
+    )
 
 
 @router.post(
@@ -83,12 +87,13 @@ async def scan_card(
 async def revoke_card(
     uid: str = Path(...),
     service: CardService = Depends(get_card_service),
+    background_tasks: BackgroundTasks = None,
 ):
     """
     Revoke an NFC card assignment.
     Unlinks the card from its user and resets it to pending status.
     """
-    return await service.revoke_card(uid)
+    return await service.revoke_card(uid, background_tasks=background_tasks)
 
 
 @router.post(
@@ -100,12 +105,15 @@ async def activate_card(
     request: CardActivationRequest,
     service: CardService = Depends(get_card_service),
     settings: Settings = Depends(get_settings),
+    background_tasks: BackgroundTasks = None,
 ):
     """
     Activate an NFC card using a UID and activation code.
     Links the card to an identity and marks it as active.
     """
-    return await service.activate_card(request, settings)
+    return await service.activate_card(
+        request, settings, background_tasks=background_tasks
+    )
 
 
 @router.post(
@@ -117,8 +125,12 @@ async def activate_card(
 async def create_card(
     card_create: CardCreateSchema,
     service: CardService = Depends(get_card_service),
+    background_tasks: BackgroundTasks = None,
 ):
-    return await service.create_card(card_create)
+    """
+    Create a new NFC card.
+    """
+    return await service.create_card(card_create, background_tasks=background_tasks)
 
 
 @router.put("/{id}", response_model=LazyCardReadSchema, summary="Update card")
@@ -126,8 +138,12 @@ async def update_card(
     id: str = Path(..., min_length=24, max_length=36),
     card_update: CardUpdateSchema = ...,
     service: CardService = Depends(get_card_service),
+    background_tasks: BackgroundTasks = None,
 ):
-    return await service.update_card(id, card_update)
+    """
+    Update an NFC card's information.
+    """
+    return await service.update_card(id, card_update, background_tasks=background_tasks)
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete card")

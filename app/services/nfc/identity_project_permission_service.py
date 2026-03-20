@@ -9,6 +9,10 @@ from app.repositories.identity_project_permission_repository import (
 )
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.membership_repository import MembershipRepository
+from app.repositories.event_repository import EventRepository
+from app.models.event import Event
+from app.models.enums.event_type_enum import EventTypeEnum
+from fastapi import BackgroundTasks
 from app.exceptions.card_exceptions import (
     MembershipNotFoundException,
     MembershipInactiveException,
@@ -27,10 +31,43 @@ class IdentityProjectPermissionService:
         permission_repos: IdentityProjectPermissionRepository,
         project_repos: ProjectRepository = None,
         membership_repos: MembershipRepository = None,
+        event_repos: EventRepository = None,
     ):
         self.permission_repos = permission_repos
         self.project_repos = project_repos
         self.membership_repos = membership_repos
+        self.event_repos = event_repos
+
+    def _log_event(
+        self,
+        event_type: EventTypeEnum,
+        identity_id: Optional[Any] = None,
+        project_id: Optional[Any] = None,
+        metadata_desc: Optional[Dict[str, Any]] = None,
+        background_tasks: Optional[BackgroundTasks] = None,
+    ):
+        """
+        Helper method to log events in the background for performance.
+        """
+        if not self.event_repos:
+            return
+
+        async def _save_event():
+            event = Event(
+                # Identity doesn't have a direct card associated in this context
+                # but we can store it in metadata or just leave card_id null
+                project_id=project_id,
+                event_type=event_type,
+                metadata_desc=metadata_desc,
+            )
+            await self.event_repos.create(event)
+
+        if background_tasks:
+            background_tasks.add_task(_save_event)
+        else:
+            import asyncio
+
+            asyncio.create_task(_save_event())
 
     async def _verify_membership(self, identity_id: uuid.UUID, project_id: uuid.UUID):
         """
@@ -88,7 +125,9 @@ class IdentityProjectPermissionService:
         ]
 
     async def create_permission(
-        self, permission_create: IdentityProjectPermissionCreateSchema
+        self,
+        permission_create: IdentityProjectPermissionCreateSchema,
+        background_tasks: Optional[BackgroundTasks] = None,
     ) -> LazyIdentityProjectPermissionReadSchema:
         try:
             # Check Membership before creation
@@ -100,22 +139,60 @@ class IdentityProjectPermissionService:
                 **permission_create.model_dump()
             )
             created = await self.permission_repos.create(permission_model)
+
+            # Log event
+            self._log_event(
+                event_type=(
+                    EventTypeEnum.ACCESS_GRANTED
+                    if created.allowed
+                    else EventTypeEnum.ACCESS_DENIED
+                ),
+                identity_id=created.identity_id,
+                project_id=created.project_id,
+                metadata_desc={
+                    "action": "create_permission",
+                    "allowed": created.allowed,
+                    "identity_id": str(created.identity_id),
+                },
+                background_tasks=background_tasks,
+            )
+
             return LazyIdentityProjectPermissionReadSchema.model_validate(created)
         except IntegrityError as e:
             print(e)
+            self._log_event(
+                event_type=EventTypeEnum.ACCESS_DENIED,
+                identity_id=permission_create.identity_id,
+                project_id=permission_create.project_id,
+                metadata_desc={
+                    "action": "create_permission",
+                    "reason": "integrity_error",
+                    "detail": str(e.orig),
+                },
+                background_tasks=background_tasks,
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Unknown identity or project id",
             )
-        except MembershipNotFoundException as e:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
-        except MembershipInactiveException as e:
+        except (MembershipNotFoundException, MembershipInactiveException) as e:
+            self._log_event(
+                event_type=EventTypeEnum.ACCESS_DENIED,
+                identity_id=permission_create.identity_id,
+                project_id=permission_create.project_id,
+                metadata_desc={
+                    "action": "create_permission",
+                    "reason": e.message,
+                },
+                background_tasks=background_tasks,
+            )
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
 
     async def update_permission(
         self,
         permission_id: str,
         permission_update: IdentityProjectPermissionUpdateSchema,
+        background_tasks: Optional[BackgroundTasks] = None,
     ) -> LazyIdentityProjectPermissionReadSchema:
         try:
             permission = await self.permission_repos.find_by_id(permission_id)
@@ -141,29 +218,87 @@ class IdentityProjectPermissionService:
                 setattr(permission, key, value)
 
             updated = await self.permission_repos.update(permission)
+
+            # Log event
+            self._log_event(
+                event_type=(
+                    EventTypeEnum.ACCESS_GRANTED
+                    if updated.allowed
+                    else EventTypeEnum.ACCESS_DENIED
+                ),
+                identity_id=updated.identity_id,
+                project_id=updated.project_id,
+                metadata_desc={
+                    "action": "update_permission",
+                    "allowed": updated.allowed,
+                    "identity_id": str(updated.identity_id),
+                },
+                background_tasks=background_tasks,
+            )
+
             return LazyIdentityProjectPermissionReadSchema.model_validate(updated)
         except IntegrityError as e:
             print(e)
+            self._log_event(
+                event_type=EventTypeEnum.ACCESS_DENIED,
+                identity_id=new_identity_id,
+                project_id=new_project_id,
+                metadata_desc={
+                    "action": "update_permission",
+                    "reason": "integrity_error",
+                    "detail": str(e.orig),
+                },
+                background_tasks=background_tasks,
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Unknown identity or project id",
             )
-        except MembershipNotFoundException as e:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
-        except MembershipInactiveException as e:
+        except (MembershipNotFoundException, MembershipInactiveException) as e:
+            self._log_event(
+                event_type=EventTypeEnum.ACCESS_DENIED,
+                identity_id=new_identity_id,
+                project_id=new_project_id,
+                metadata_desc={
+                    "action": "update_permission",
+                    "reason": e.message,
+                },
+                background_tasks=background_tasks,
+            )
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
 
-    async def delete_permission(self, permission_id: str) -> None:
+    async def delete_permission(
+        self, permission_id: str, background_tasks: Optional[BackgroundTasks] = None
+    ) -> None:
         permission = await self.permission_repos.find_by_id(permission_id)
         if not permission:
+            # Log failure
+            self._log_event(
+                event_type=EventTypeEnum.ACCESS_DENIED,
+                metadata_desc={
+                    "action": "delete_permission",
+                    "reason": "Permission record not found",
+                    "permission_id": str(permission_id),
+                },
+                background_tasks=background_tasks,
+            )
             raise HTTPException(status_code=404, detail="Permission record not found")
+
+        # Log event if it was an active grant? 
+        # Usually delete_permission is for cleaning up, but let's log it as a revocation if needed.
+        # For now, just log the deletion in the repo if it has its own logging, 
+        # but here we log the failure to find it.
+
         await self.permission_repos.delete(permission)
 
     async def delete_all_permissions(self) -> None:
         await self.permission_repos.delete_all()
 
     async def disallow_identity(
-        self, identity_id: str, project_id: str
+        self,
+        identity_id: str,
+        project_id: str,
+        background_tasks: Optional[BackgroundTasks] = None,
     ) -> LazyIdentityProjectPermissionReadSchema:
         """
         Explicitly disallows an identity from a project by setting allowed=False.
@@ -182,6 +317,19 @@ class IdentityProjectPermissionService:
             if permission:
                 permission.allowed = False
                 updated = await self.permission_repos.update(permission)
+
+                self._log_event(
+                    event_type=EventTypeEnum.ACCESS_DENIED,
+                    identity_id=updated.identity_id,
+                    project_id=updated.project_id,
+                    metadata_desc={
+                        "action": "explicit_disallow",
+                        "allowed": False,
+                        "identity_id": str(updated.identity_id),
+                    },
+                    background_tasks=background_tasks,
+                )
+
                 return LazyIdentityProjectPermissionReadSchema.model_validate(updated)
             else:
                 # Create a new "disallow" record
@@ -189,16 +337,43 @@ class IdentityProjectPermissionService:
                     identity_id=identity_id, project_id=project_id, allowed=False
                 )
                 created = await self.permission_repos.create(new_permission)
+
+                self._log_event(
+                    event_type=EventTypeEnum.ACCESS_DENIED,
+                    identity_id=created.identity_id,
+                    project_id=created.project_id,
+                    metadata_desc={
+                        "action": "explicit_disallow (created)",
+                        "allowed": False,
+                        "identity_id": str(created.identity_id),
+                    },
+                    background_tasks=background_tasks,
+                )
+
                 return LazyIdentityProjectPermissionReadSchema.model_validate(created)
 
         except IntegrityError:
+            # Log failure
+            self._log_event(
+                event_type=EventTypeEnum.ACCESS_DENIED,
+                identity_id=identity_id,
+                project_id=project_id,
+                metadata_desc={
+                    "action": "explicit_disallow",
+                    "reason": "Invalid identity_id or project_id",
+                },
+                background_tasks=background_tasks,
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid identity_id or project_id",
             )
 
     async def allow_identity(
-        self, identity_id: str, project_id: str
+        self,
+        identity_id: str,
+        project_id: str,
+        background_tasks: Optional[BackgroundTasks] = None,
     ) -> LazyIdentityProjectPermissionReadSchema:
         """
         Explicitly allows an identity for a project by setting allowed=True.
@@ -220,6 +395,19 @@ class IdentityProjectPermissionService:
             if permission:
                 permission.allowed = True
                 updated = await self.permission_repos.update(permission)
+
+                self._log_event(
+                    event_type=EventTypeEnum.ACCESS_GRANTED,
+                    identity_id=updated.identity_id,
+                    project_id=updated.project_id,
+                    metadata_desc={
+                        "action": "explicit_allow",
+                        "allowed": True,
+                        "identity_id": str(updated.identity_id),
+                    },
+                    background_tasks=background_tasks,
+                )
+
                 return LazyIdentityProjectPermissionReadSchema.model_validate(updated)
             else:
                 # Create a new "allow" record
@@ -227,14 +415,39 @@ class IdentityProjectPermissionService:
                     identity_id=identity_id, project_id=project_id, allowed=True
                 )
                 created = await self.permission_repos.create(new_permission)
+
+                self._log_event(
+                    event_type=EventTypeEnum.ACCESS_GRANTED,
+                    identity_id=created.identity_id,
+                    project_id=created.project_id,
+                    metadata_desc={
+                        "action": "explicit_allow (created)",
+                        "allowed": True,
+                        "identity_id": str(created.identity_id),
+                    },
+                    background_tasks=background_tasks,
+                )
+
                 return LazyIdentityProjectPermissionReadSchema.model_validate(created)
 
         except IntegrityError:
+            self._log_event(
+                event_type=EventTypeEnum.ACCESS_DENIED,
+                identity_id=identity_id,
+                project_id=project_id,
+                metadata_desc={"action": "explicit_allow", "reason": "integrity_error"},
+                background_tasks=background_tasks,
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid identity_id or project_id",
             )
-        except MembershipNotFoundException as e:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
-        except MembershipInactiveException as e:
+        except (MembershipNotFoundException, MembershipInactiveException) as e:
+            self._log_event(
+                event_type=EventTypeEnum.ACCESS_DENIED,
+                identity_id=identity_id,
+                project_id=project_id,
+                metadata_desc={"action": "explicit_allow", "reason": e.message},
+                background_tasks=background_tasks,
+            )
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)

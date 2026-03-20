@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Path, status
+from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
 from typing import List
 from app.providers.auth_provider import require_permission
 from app.providers.service_providers import get_membership_service
@@ -49,8 +49,11 @@ async def get_membership(
 async def create_membership(
     membership_create: MembershipCreateSchema,
     service: MembershipService = Depends(get_membership_service),
+    background_tasks: BackgroundTasks = None,
 ):
-    return await service.create_membership(membership_create)
+    return await service.create_membership(
+        membership_create, background_tasks=background_tasks
+    )
 
 
 @router.put(
@@ -60,8 +63,11 @@ async def update_membership(
     id: str = Path(..., min_length=24, max_length=36),
     membership_update: MembershipUpdateSchema = ...,
     service: MembershipService = Depends(get_membership_service),
+    background_tasks: BackgroundTasks = None,
 ):
-    return await service.update_membership(id, membership_update)
+    return await service.update_membership(
+        id, membership_update, background_tasks=background_tasks
+    )
 
 
 @router.delete(
@@ -70,8 +76,9 @@ async def update_membership(
 async def delete_membership(
     id: str = Path(..., min_length=24, max_length=36),
     service: MembershipService = Depends(get_membership_service),
+    background_tasks: BackgroundTasks = None,
 ):
-    await service.delete_membership(id)
+    await service.delete_membership(id, background_tasks=background_tasks)
     return {"detail": "Membership deleted"}
 
 

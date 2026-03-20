@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Path, status
+from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
 from typing import List
 from app.providers.auth_provider import require_permission
 from app.providers.service_providers import get_identity_service
@@ -48,8 +48,11 @@ async def get_identity(
 async def create_identity(
     identity_create: IdentityCreateSchema,
     service: IdentityService = Depends(get_identity_service),
+    background_tasks: BackgroundTasks = None,
 ):
-    return await service.create_identity(identity_create)
+    return await service.create_identity(
+        identity_create, background_tasks=background_tasks
+    )
 
 
 @router.put("/{id}", response_model=LazyIdentityReadSchema, summary="Update identity")
@@ -57,8 +60,11 @@ async def update_identity(
     id: str = Path(..., min_length=24, max_length=36),
     identity_update: IdentityUpdateSchema = ...,
     service: IdentityService = Depends(get_identity_service),
+    background_tasks: BackgroundTasks = None,
 ):
-    return await service.update_identity(id, identity_update)
+    return await service.update_identity(
+        id, identity_update, background_tasks=background_tasks
+    )
 
 
 @router.delete(
@@ -67,8 +73,9 @@ async def update_identity(
 async def delete_identity(
     id: str = Path(..., min_length=24, max_length=36),
     service: IdentityService = Depends(get_identity_service),
+    background_tasks: BackgroundTasks = None,
 ):
-    await service.delete_identity(id)
+    await service.delete_identity(id, background_tasks=background_tasks)
     return {"detail": "Identity deleted"}
 
 

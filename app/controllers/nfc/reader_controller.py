@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Path, status
+from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
 from typing import List
 from app.providers.auth_provider import require_permission
 from app.providers.service_providers import get_reader_service
@@ -47,8 +47,9 @@ async def get_reader(
 async def create_reader(
     reader_create: ReaderCreateSchema,
     service: ReaderService = Depends(get_reader_service),
+    background_tasks: BackgroundTasks = None,
 ):
-    return await service.create_reader(reader_create)
+    return await service.create_reader(reader_create, background_tasks=background_tasks)
 
 
 @router.put("/{id}", response_model=LazyReaderReadSchema, summary="Update reader")
@@ -56,16 +57,20 @@ async def update_reader(
     id: str = Path(..., min_length=24, max_length=36),
     reader_update: ReaderUpdateSchema = ...,
     service: ReaderService = Depends(get_reader_service),
+    background_tasks: BackgroundTasks = None,
 ):
-    return await service.update_reader(id, reader_update)
+    return await service.update_reader(
+        id, reader_update, background_tasks=background_tasks
+    )
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete reader")
 async def delete_reader(
     id: str = Path(..., min_length=24, max_length=36),
     service: ReaderService = Depends(get_reader_service),
+    background_tasks: BackgroundTasks = None,
 ):
-    await service.delete_reader(id)
+    await service.delete_reader(id, background_tasks=background_tasks)
     return {"detail": "Reader deleted"}
 
 

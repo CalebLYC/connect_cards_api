@@ -71,8 +71,9 @@ def get_user_service(
 
 def get_identity_service(
     identity_repos: IdentityRepository = Depends(get_identity_repository),
+    event_repos: EventRepository = Depends(get_event_repository),
 ) -> IdentityService:
-    return IdentityService(identity_repos=identity_repos)
+    return IdentityService(identity_repos=identity_repos, event_repos=event_repos)
 
 
 def get_auth_service(
@@ -114,11 +115,13 @@ def get_card_service(
     card_repos: CardRepository = Depends(get_card_repository),
     membership_repos: MembershipRepository = Depends(get_membership_repository),
     identity_repos: IdentityRepository = Depends(get_identity_repository),
+    event_repos: EventRepository = Depends(get_event_repository),
 ) -> CardService:
     return CardService(
         card_repos=card_repos,
         membership_repos=membership_repos,
         identity_repos=identity_repos,
+        event_repos=event_repos,
     )
 
 
@@ -126,11 +129,13 @@ def get_reader_service(
     reader_repos: ReaderRepository = Depends(get_reader_repository),
     project_repos: ProjectRepository = Depends(get_project_repository),
     organization_repos: OrganizationRepository = Depends(get_organization_repository),
+    event_repos: EventRepository = Depends(get_event_repository),
 ) -> ReaderService:
     return ReaderService(
         reader_repos=reader_repos,
         project_repos=project_repos,
         organization_repos=organization_repos,
+        event_repos=event_repos,
     )
 
 
@@ -168,8 +173,9 @@ def get_card_assignment_history_service(
 
 def get_membership_service(
     membership_repos: MembershipRepository = Depends(get_membership_repository),
+    event_repos: EventRepository = Depends(get_event_repository),
 ) -> MembershipService:
-    return MembershipService(membership_repos=membership_repos)
+    return MembershipService(membership_repos=membership_repos, event_repos=event_repos)
 
 
 def get_identity_project_permission_service(
@@ -178,9 +184,11 @@ def get_identity_project_permission_service(
     ),
     project_repos: ProjectRepository = Depends(get_project_repository),
     membership_repos: MembershipRepository = Depends(get_membership_repository),
+    event_repos: EventRepository = Depends(get_event_repository),
 ) -> IdentityProjectPermissionService:
     return IdentityProjectPermissionService(
         permission_repos=permission_repos,
         project_repos=project_repos,
         membership_repos=membership_repos,
+        event_repos=event_repos,
     )

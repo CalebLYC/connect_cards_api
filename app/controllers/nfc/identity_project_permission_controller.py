@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Path, status
+from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
 from typing import List
 from app.providers.auth_provider import require_permission
 from app.providers.service_providers import get_identity_project_permission_service
@@ -64,8 +64,11 @@ async def create_permission(
     service: IdentityProjectPermissionService = Depends(
         get_identity_project_permission_service
     ),
+    background_tasks: BackgroundTasks = None,
 ):
-    return await service.create_permission(permission_create)
+    return await service.create_permission(
+        permission_create, background_tasks=background_tasks
+    )
 
 
 @router.put(
@@ -79,8 +82,11 @@ async def update_permission(
     service: IdentityProjectPermissionService = Depends(
         get_identity_project_permission_service
     ),
+    background_tasks: BackgroundTasks = None,
 ):
-    return await service.update_permission(id, permission_update)
+    return await service.update_permission(
+        id, permission_update, background_tasks=background_tasks
+    )
 
 
 @router.delete(
@@ -91,8 +97,9 @@ async def delete_permission(
     service: IdentityProjectPermissionService = Depends(
         get_identity_project_permission_service
     ),
+    background_tasks: BackgroundTasks = None,
 ):
-    await service.delete_permission(id)
+    await service.delete_permission(id, background_tasks=background_tasks)
     return {"detail": "Permission deleted"}
 
 
@@ -119,11 +126,14 @@ async def disallow_identity(
     service: IdentityProjectPermissionService = Depends(
         get_identity_project_permission_service
     ),
+    background_tasks: BackgroundTasks = None,
 ):
     """
     Explicitly revoke access for an identity to a project.
     """
-    return await service.disallow_identity(identity_id, project_id)
+    return await service.disallow_identity(
+        identity_id, project_id, background_tasks=background_tasks
+    )
 
 
 @router.post(
@@ -137,8 +147,11 @@ async def allow_identity(
     service: IdentityProjectPermissionService = Depends(
         get_identity_project_permission_service
     ),
+    background_tasks: BackgroundTasks = None,
 ):
     """
     Explicitly grant access for an identity to a project.
     """
-    return await service.allow_identity(identity_id, project_id)
+    return await service.allow_identity(
+        identity_id, project_id, background_tasks=background_tasks
+    )

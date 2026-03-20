@@ -17,3 +17,18 @@ class EventTypeEnum(str, Enum):
     CARD_EXPIRED = "card_expired"
     CARD_DAMAGED = "card_damaged"
     CARD_UNKNOWN = "card_unknown"
+
+    # Reader
+    READER_CREATED = "reader_created"
+    READER_UPDATED = "reader_updated"
+    READER_DELETED = "reader_deleted"
+
+    # Membership
+    MEMBERSHIP_CREATED = "membership_created"
+    MEMBERSHIP_UPDATED = "membership_updated"
+    MEMBERSHIP_DELETED = "membership_deleted"
+
+    # Identity
+    IDENTITY_CREATED = "identity_created"
+    IDENTITY_UPDATED = "identity_updated"
+    IDENTITY_DELETED = "identity_deleted"
