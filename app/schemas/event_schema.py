@@ -8,7 +8,9 @@ from app.models.enums.event_type_enum import EventTypeEnum
 
 class LazyEventReadSchema(BaseModel):
     id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
-    card_id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
+    card_id: Optional[UUID] = Field(
+        default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
+    )
     # identity_id: UUID = Field(..., example="04bcf3f5-cde5-4d27-8a20-2f50076043c5")
     reader_id: Optional[UUID] = Field(
         default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
@@ -19,9 +21,9 @@ class LazyEventReadSchema(BaseModel):
     event_type: EventTypeEnum = Field(..., example="granted")
     metadata_desc: Optional[dict] = Field(default=None, example="Event description")
     created_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
-    updated_at: Optional[datetime.datetime] = Field(
+    """updated_at: Optional[datetime.datetime] = Field(
         default=None, example="2025-01-01T00:00:00"
-    )
+    )"""
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -131,9 +133,9 @@ class EventReadSchema(BaseModel):
         default=None, example="2025-01-01T00:00:00"
     )"""
     # identity: LazyIdentityReadSchema
-    card: LazyCardReadSchema
+    card: Optional[LazyCardReadSchema] = Field(default=None)
     reader: Optional[LazyReaderReadSchema] = Field(default=None)
-    project: LazyProjectReadSchema
+    project: Optional[LazyProjectReadSchema] = Field(default=None)
 
     model_config = ConfigDict(
         from_attributes=True,
