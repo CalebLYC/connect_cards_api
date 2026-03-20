@@ -6,10 +6,14 @@ from sqlalchemy import (
     Index,
     String,
     func,
+    # Enum as sqlEnum,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+from sqlalchemy.types import JSON
+
 from app.models.base import Base
+from app.models.enums.event_type_enum import EventTypeEnum
 
 
 class Event(Base):
@@ -19,11 +23,11 @@ class Event(Base):
     card_id = Column(UUID(as_uuid=True), ForeignKey("cards.id"))
     # identity_id = Column(UUID(as_uuid=True), ForeignKey("identities.id"))
     reader_id = Column(UUID(as_uuid=True), ForeignKey("readers.id"), nullable=True)
-    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"))
-    result = Column(String)
-    description = Column(String, nullable=True)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=True)
+    # event_type = Column(sqlEnum(EventTypeEnum))
+    event_type = Column(String(50), nullable=True)
+    metadata_desc = Column(JSON, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     card = relationship("Card", back_populates="events")
     # identity = relationship("Identity", back_populates="events")
@@ -37,4 +41,4 @@ class Event(Base):
     )
 
     def __repr__(self):
-        return f"<Event(id={self.id}, card_id={self.card_id}, reader_id={self.reader_id}, project_id={self.project_id}, result={self.result}, description={self.description}, created_at={self.created_at}, updated_at={self.updated_at})>"
+        return f"<Event(id={self.id}, card_id={self.card_id}, reader_id={self.reader_id}, project_id={self.project_id}, event_type={self.event_type}, created_at={self.created_at})>"

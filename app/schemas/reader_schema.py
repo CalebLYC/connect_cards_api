@@ -1,5 +1,6 @@
+import datetime
 from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 

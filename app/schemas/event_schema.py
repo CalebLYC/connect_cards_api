@@ -3,6 +3,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 from uuid import UUID
 
+from app.models.enums.event_type_enum import EventTypeEnum
+
 
 class LazyEventReadSchema(BaseModel):
     id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
@@ -11,11 +13,15 @@ class LazyEventReadSchema(BaseModel):
     reader_id: Optional[UUID] = Field(
         default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
     )
-    project_id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
-    result: str = Field(..., example="granted")
+    project_id: Optional[UUID] = Field(
+        default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
+    )
+    event_type: EventTypeEnum = Field(..., example="granted")
+    metadata_desc: Optional[dict] = Field(default=None, example="Event description")
     created_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
-    updated_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
-    description: Optional[str] = Field(default=None, example="Event description")
+    updated_at: Optional[datetime.datetime] = Field(
+        default=None, example="2025-01-01T00:00:00"
+    )
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -26,10 +32,13 @@ class LazyEventReadSchema(BaseModel):
                 # "identity_id": "04bcf3f5-cde5-4d27-8a20-2f50076043c5",
                 "reader_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                 "project_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-                "result": "granted",
+                "event_type": "granted",
+                "metadata_desc": {
+                    "result": "granted",
+                    "description": "Event description",
+                },
                 "created_at": "2025-01-01T00:00:00",
-                "updated_at": "2025-01-01T00:00:00",
-                "description": "Event description",
+                # "updated_at": "2025-01-01T00:00:00",
             }
         },
     )
@@ -41,9 +50,11 @@ class EventCreateSchema(BaseModel):
     reader_id: Optional[UUID] = Field(
         default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
     )
-    project_id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
-    result: str = Field(..., example="granted")
-    description: Optional[str] = Field(default=None, example="Event description")
+    project_id: Optional[UUID] = Field(
+        default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
+    )
+    event_type: EventTypeEnum = Field(..., example="granted")
+    metadata_desc: Optional[dict] = Field(default=None, example="Event description")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -53,8 +64,11 @@ class EventCreateSchema(BaseModel):
                 # "identity_id": "04bcf3f5-cde5-4d27-8a20-2f50076043c5",
                 "reader_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                 "project_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-                "result": "granted",
-                "description": "Event description",
+                "event_type": "granted",
+                "metadata_desc": {
+                    "result": "granted",
+                    "description": "Event description",
+                },
             }
         },
     )
@@ -71,10 +85,8 @@ class EventUpdateSchema(BaseModel):
     project_id: Optional[UUID] = Field(
         default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
     )
-    result: Optional[str] = Field(default=None, example="denied")
-    description: Optional[str] = Field(
-        default=None, example="Updated event description"
-    )
+    event_type: Optional[EventTypeEnum] = Field(default=None, example="denied")
+    metadata_desc: Optional[dict] = Field(default=None, example="Event description")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -85,8 +97,11 @@ class EventUpdateSchema(BaseModel):
                 "card_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                 "reader_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                 "project_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-                "result": "denied",
-                "description": "Updated event description",
+                "event_type": "denied",
+                "metadata_desc": {
+                    "result": "denied",
+                    "description": "Event description",
+                },
             }
         },
     )
@@ -106,11 +121,15 @@ class EventReadSchema(BaseModel):
     reader_id: Optional[UUID] = Field(
         default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
     )
-    project_id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
-    result: str = Field(..., example="granted")
+    project_id: Optional[UUID] = Field(
+        default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
+    )
+    event_type: EventTypeEnum = Field(..., example="granted")
+    metadata_desc: Optional[dict] = Field(default=None, example="Event description")
     created_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
-    updated_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
-    description: Optional[str] = Field(default=None, example="Event description")
+    """updated_at: Optional[datetime.datetime] = Field(
+        default=None, example="2025-01-01T00:00:00"
+    )"""
     # identity: LazyIdentityReadSchema
     card: LazyCardReadSchema
     reader: Optional[LazyReaderReadSchema] = Field(default=None)
@@ -125,10 +144,13 @@ class EventReadSchema(BaseModel):
                 # "identity_id": "04bcf3f5-cde5-4d27-8a20-2f50076043c5",
                 "reader_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                 "project_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-                "result": "granted",
-                "description": "Event description",
+                "event_type": "granted",
+                "metadata_desc": {
+                    "result": "granted",
+                    "description": "Event description",
+                },
                 "created_at": "2025-01-01T00:00:00",
-                "updated_at": "2025-01-01T00:00:00",
+                # "updated_at": "2025-01-01T00:00:00",
                 "card": {
                     "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                     "uid": "CARD123456",
