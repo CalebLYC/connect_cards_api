@@ -39,6 +39,7 @@ from app.schemas.nfc_schema import (
 )
 from app.core.config import Settings
 import datetime
+from app.services.nfc.webhook_service import WebhookService
 
 
 class CardService:
@@ -48,11 +49,13 @@ class CardService:
         membership_repos: MembershipRepository = None,
         identity_repos: IdentityRepository = None,
         event_repos: EventRepository = None,
+        webhook_service: WebhookService = None,
     ):
         self.card_repos = card_repos
         self.membership_repos = membership_repos
         self.identity_repos = identity_repos
         self.event_repos = event_repos
+        self.webhook_service = webhook_service
 
     def _log_event(
         self,
@@ -64,12 +67,12 @@ class CardService:
         background_tasks: Optional[BackgroundTasks] = None,
     ):
         """
-        Helper method to log events in the background for performance.
+        Helper method to log events and trigger webhooks in the background.
         """
         if not self.event_repos:
             return
 
-        async def _save_event():
+        async def _save_and_trigger_event():
             event = Event(
                 card_id=card_id,
                 reader_id=reader_id,
@@ -77,18 +80,29 @@ class CardService:
                 event_type=event_type,
                 metadata_desc=metadata_desc,
             )
-            await self.event_repos.create(event)
+            created_event = await self.event_repos.create(event)
+
+            # Trigger webhooks if service is available
+            if self.webhook_service and background_tasks:
+                await self.webhook_service.trigger_webhooks(
+                    created_event, background_tasks
+                )
+            elif self.webhook_service:
+                # If no background_tasks (e.g. internal call), we still want to trigger
+                # but we'd need a separate way to handle the async dispatch if not in a request context.
+                # For now, we assume background_tasks is preferred.
+                import asyncio
+
+                await self.webhook_service.trigger_webhooks(
+                    created_event, background_tasks
+                )  # This might still need bg tasks
 
         if background_tasks:
-            background_tasks.add_task(_save_event)
+            background_tasks.add_task(_save_and_trigger_event)
         else:
-            # Fallback for sync or non-background execution?
-            # Better to use background tasks always if provided.
-            # If not provided, we could create an asyncio task directly.
-            # But let's keep it simple for now.
             import asyncio
 
-            asyncio.create_task(_save_event())
+            asyncio.create_task(_save_and_trigger_event())
 
     async def _verify_membership(
         self, identity_id: uuid.UUID, organization_id: uuid.UUID
@@ -183,9 +197,9 @@ class CardService:
                 metadata_desc={
                     "uid": created.uid,
                     "action": "create_card",
-                    "identity_id": str(created.identity_id)
-                    if created.identity_id
-                    else None,
+                    "identity_id": (
+                        str(created.identity_id) if created.identity_id else None
+                    ),
                 },
                 background_tasks=background_tasks,
             )
@@ -295,9 +309,11 @@ class CardService:
                 new_id = card_update.identity_id
                 # Note: this is a simple check, we could compare with old card if needed
                 self._log_event(
-                    event_type=EventTypeEnum.CARD_ASSIGNED
-                    if new_id
-                    else EventTypeEnum.CARD_UNASSIGNED,
+                    event_type=(
+                        EventTypeEnum.CARD_ASSIGNED
+                        if new_id
+                        else EventTypeEnum.CARD_UNASSIGNED
+                    ),
                     card_id=updated.id,
                     metadata_desc={
                         "uid": updated.uid,

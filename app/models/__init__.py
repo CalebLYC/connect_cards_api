@@ -11,6 +11,7 @@ from .access_token import AccessToken
 from .reader import Reader
 from .event import Event
 from .card_assignment_history import CardAssignmentHistory
+from .webhook import Webhook
 
 from .enums.card_status_enum import CardStatusEnum
 from .enums.organization_type_enum import OrganizationTypeEnum

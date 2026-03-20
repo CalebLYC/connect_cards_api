@@ -12,6 +12,10 @@ from app.schemas.event_schema import (
     EventCreateSchema,
     EventUpdateSchema,
 )
+from fastapi import BackgroundTasks
+
+
+from app.services.nfc.webhook_service import WebhookService
 
 
 class EventService:
@@ -20,10 +24,12 @@ class EventService:
         event_repos: EventRepository,
         reader_repos: ReaderRepository,
         project_repos: ProjectRepository,
+        webhook_service: WebhookService = None,
     ):
         self.event_repos = event_repos
         self.reader_repos = reader_repos
         self.project_repos = project_repos
+        self.webhook_service = webhook_service
 
     async def get_event(
         self, event_id: str, eager: bool = True
@@ -53,7 +59,7 @@ class EventService:
         return [EventReadSchema.model_validate(e) for e in events]
 
     async def create_event(
-        self, event_create: EventCreateSchema
+        self, event_create: EventCreateSchema, background_tasks: Optional[BackgroundTasks] = None
     ) -> LazyEventReadSchema:
         try:
             db_reader = await self.reader_repos.find_by_id(event_create.reader_id)
@@ -69,6 +75,10 @@ class EventService:
                 )
             event_model = Event(**event_create.model_dump())
             created = await self.event_repos.create(event_model)
+            
+            if self.webhook_service and background_tasks:
+                await self.webhook_service.trigger_webhooks(created, background_tasks)
+
             return LazyEventReadSchema.model_validate(created)
         except IntegrityError as e:
             print(e)
@@ -78,7 +88,7 @@ class EventService:
             )
 
     async def update_event(
-        self, event_id: str, event_update: EventUpdateSchema
+        self, event_id: str, event_update: EventUpdateSchema, background_tasks: Optional[BackgroundTasks] = None
     ) -> LazyEventReadSchema:
         try:
             event = await self.event_repos.find_by_id(event_id)
@@ -125,6 +135,10 @@ class EventService:
                 setattr(event, key, value)
 
             updated = await self.event_repos.update(event)
+
+            if self.webhook_service and background_tasks:
+                await self.webhook_service.trigger_webhooks(updated, background_tasks)
+
             return LazyEventReadSchema.model_validate(updated)
         except IntegrityError as e:
             print(e)

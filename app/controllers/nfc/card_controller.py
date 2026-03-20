@@ -149,9 +149,10 @@ async def update_card(
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete card")
 async def delete_card(
     id: str = Path(..., min_length=24, max_length=36),
+    background_tasks: BackgroundTasks = None,
     service: CardService = Depends(get_card_service),
 ):
-    await service.delete_card(id)
+    await service.delete_card(id, background_tasks=background_tasks)
     return {"detail": "Card deleted"}
 
 

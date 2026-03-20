@@ -8,10 +8,7 @@ from app.schemas.identity_schema import (
     LazyIdentityReadSchema,
 )
 from fastapi import HTTPException, status, BackgroundTasks
-from app.repositories.event_repository import EventRepository
-from app.models.event import Event
-from app.models.enums.event_type_enum import EventTypeEnum
-from typing import Optional, List, Dict, Any
+from app.services.nfc.webhook_service import WebhookService
 
 
 class IdentityService:
@@ -19,9 +16,11 @@ class IdentityService:
         self,
         identity_repos: IdentityRepository,
         event_repos: EventRepository = None,
+        webhook_service: WebhookService = None,
     ):
         self.identity_repos = identity_repos
         self.event_repos = event_repos
+        self.webhook_service = webhook_service
 
     def _log_event(
         self,
@@ -31,24 +30,32 @@ class IdentityService:
         background_tasks: Optional[BackgroundTasks] = None,
     ):
         """
-        Helper method to log events in the background for performance.
+        Helper method to log events and trigger webhooks in the background.
         """
         if not self.event_repos:
             return
 
-        async def _save_event():
+        async def _save_and_trigger_event():
             event = Event(
                 event_type=event_type,
                 metadata_desc=metadata_desc,
             )
-            await self.event_repos.create(event)
+            created_event = await self.event_repos.create(event)
+
+            # Trigger webhooks if service is available
+            if self.webhook_service and background_tasks:
+                await self.webhook_service.trigger_webhooks(
+                    created_event, background_tasks
+                )
+            elif self.webhook_service:
+                import asyncio
+                await self.webhook_service.trigger_webhooks(created_event, background_tasks)
 
         if background_tasks:
-            background_tasks.add_task(_save_event)
+            background_tasks.add_task(_save_and_trigger_event)
         else:
             import asyncio
-
-            asyncio.create_task(_save_event())
+            asyncio.create_task(_save_and_trigger_event())
 
     async def get_identity(
         self, identity_id: str, eager: bool = True

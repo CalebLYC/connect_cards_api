@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Path, status
+from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
 from typing import List
 from app.providers.auth_provider import require_permission
 from app.providers.service_providers import get_event_service
@@ -46,18 +46,20 @@ async def get_event(
 )
 async def create_event(
     event_create: EventCreateSchema,
+    background_tasks: BackgroundTasks,
     service: EventService = Depends(get_event_service),
 ):
-    return await service.create_event(event_create)
+    return await service.create_event(event_create, background_tasks=background_tasks)
 
 
 @router.put("/{id}", response_model=LazyEventReadSchema, summary="Update event")
 async def update_event(
     id: str = Path(..., min_length=24, max_length=36),
     event_update: EventUpdateSchema = ...,
+    background_tasks: BackgroundTasks = None,
     service: EventService = Depends(get_event_service),
 ):
-    return await service.update_event(id, event_update)
+    return await service.update_event(id, event_update, background_tasks=background_tasks)
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete event")

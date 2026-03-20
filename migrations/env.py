@@ -18,6 +18,7 @@ from app.models.event import Event
 from app.models.card_assignment_history import CardAssignmentHistory
 from app.models.identity_project_permission import IdentityProjectPermission
 from app.models.reader import Reader
+from app.models.webhook import Webhook
 
 from app.models.enums.card_status_enum import CardStatusEnum
 from app.models.enums.organization_type_enum import OrganizationTypeEnum

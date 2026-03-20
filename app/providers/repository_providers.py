@@ -20,8 +20,13 @@ from app.repositories.membership_repository import MembershipRepository
 from app.repositories.identity_project_permission_repository import (
     IdentityProjectPermissionRepository,
 )
+from app.repositories.webhook_repository import WebhookRepository
 
 from app.providers.providers import get_db
+
+
+def get_webhook_repository(db: AsyncSession = Depends(get_db)):
+    return WebhookRepository(db=db)
 
 
 def get_user_repository(db: AsyncSession = Depends(get_db)):
@@ -75,3 +80,7 @@ def get_membership_repository(db: AsyncSession = Depends(get_db)):
 
 def get_identity_project_permission_repository(db: AsyncSession = Depends(get_db)):
     return IdentityProjectPermissionRepository(db=db)
+
+
+def get_webhook_repository(db: AsyncSession = Depends(get_db)):
+    return WebhookRepository(db=db)
