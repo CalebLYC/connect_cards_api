@@ -22,6 +22,7 @@ class LazyCardAssignmentHistoryReadSchema(BaseModel):
                 "identity_id": "04bcf3f5-cde5-4d27-8a20-2f50076043c5",
                 "assigned_at": "2025-01-01T00:00:00",
                 "unassigned_at": "2025-01-02T00:00:00",
+                "updated_at": "2025-01-01T00:00:00",
             }
         },
     )
@@ -101,6 +102,7 @@ class CardAssignmentHistoryReadSchema(BaseModel):
                 "identity_id": "04bcf3f5-cde5-4d27-8a20-2f50076043c5",
                 "assigned_at": "2025-01-01T00:00:00",
                 "unassigned_at": "2025-01-02T00:00:00",
+                "updated_at": "2025-01-01T00:00:00",
                 "card": {
                     "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                     "uid": "CARD123456",
@@ -109,12 +111,18 @@ class CardAssignmentHistoryReadSchema(BaseModel):
                     "activation_code": "123456",
                     "issuer_organization_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                     "created_at": "2025-01-01T00:00:00",
+                    "updated_at": "2025-01-01T00:00:00",
                 },
                 "identity": {
                     "id": "04bcf3f5-cde5-4d27-8a20-2f50076043c5",
                     "email": "jdoe@example.com",
                     "name": "John Doe",
+                    "sex": "M",
+                    "phone": "+2250707070707",
+                    "address": "123 Rue de la Paix",
+                    "date_of_birth": "1990-01-01T00:00:00",
                     "created_at": "2025-01-01T00:00:00",
+                    "updated_at": "2025-01-01T00:00:00",
                 },
             }
         },

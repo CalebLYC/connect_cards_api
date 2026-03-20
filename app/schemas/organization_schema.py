@@ -3,7 +3,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional
 from uuid import UUID
 
-from app.models.organization import OrganizationTypeEnum
+from app.models.enums.organization_type_enum import OrganizationTypeEnum
 
 
 class LazyOrganizationReadSchema(BaseModel):
@@ -11,6 +11,7 @@ class LazyOrganizationReadSchema(BaseModel):
     name: str = Field(..., example="Example Organization")
     type: Optional[OrganizationTypeEnum] = Field(default=None, example="Company")
     created_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
+    updated_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -20,6 +21,7 @@ class LazyOrganizationReadSchema(BaseModel):
                 "name": "Example Organization",
                 "type": "Company",
                 "created_at": "2025-01-01T00:00:00",
+                "updated_at": "2025-01-01T00:00:00",
             }
         },
     )
@@ -70,6 +72,7 @@ class OrganizationReadSchema(BaseModel):
     name: str = Field(..., example="Example Organization")
     type: Optional[OrganizationTypeEnum] = Field(default=None, example="Company")
     created_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
+    updated_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
     users: List[LazyUserReadSchema] = Field(default_factory=list)
     # memberships: List[LazyMembershipReadSchema] = Field(default_factory=list)
     projects: List[LazyProjectReadSchema] = Field(default_factory=list)
@@ -84,11 +87,44 @@ class OrganizationReadSchema(BaseModel):
                 "name": "Example Organization",
                 "type": "Company",
                 "created_at": "2025-01-01T00:00:00",
-                "users": [],
+                "updated_at": "2025-01-01T00:00:00",
+                "users": [
+                    {
+                        "id": "04bcf3f5-cde5-4d27-8a20-2f50076043c5",
+                        "email": "jdoe@example.com",
+                        "name": "John Doe",
+                        "created_at": "2025-01-01T00:00:00",
+                        "updated_at": "2025-01-01T00:00:00",
+                    }
+                ],
                 # "memberships": [],
-                "projects": [],
-                "readers": [],
-                "issued_cards": [],
+                "projects": [
+                    {
+                        "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                        "name": "Example Project",
+                        "description": "A sample project description",
+                        "created_at": "2025-01-01T00:00:00",
+                        "updated_at": "2025-01-01T00:00:00",
+                    }
+                ],
+                "readers": [
+                    {
+                        "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                        "name": "Example Reader",
+                        "description": "A sample reader description",
+                        "created_at": "2025-01-01T00:00:00",
+                        "updated_at": "2025-01-01T00:00:00",
+                    }
+                ],
+                "issued_cards": [
+                    {
+                        "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                        "name": "Example Card",
+                        "description": "A sample card description",
+                        "created_at": "2025-01-01T00:00:00",
+                        "updated_at": "2025-01-01T00:00:00",
+                    }
+                ],
             }
         },
     )

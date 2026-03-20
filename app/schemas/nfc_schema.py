@@ -23,8 +23,14 @@ class ScanCardResponse(BaseModel):
                 "authorized": True,
                 "user": {
                     "id": "04bcf3f5-cde5-4d27-8a20-2f50076043c5",
+                    "email": "jdoe@example.com",
                     "name": "John Doe",
-                    "email": "jdoe@gmail.com",
+                    "sex": "M",
+                    "phone": "+2250707070707",
+                    "address": "123 Rue de la Paix",
+                    "date_of_birth": "1990-01-01T00:00:00",
+                    "created_at": "2025-01-01T00:00:00",
+                    "updated_at": "2025-01-01T00:00:00",
                 },
                 "permissions": ["admin", "editor"],
             }

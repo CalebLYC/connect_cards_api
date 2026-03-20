@@ -14,6 +14,7 @@ class LazyEventReadSchema(BaseModel):
     project_id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
     result: str = Field(..., example="granted")
     created_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
+    updated_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
     description: Optional[str] = Field(default=None, example="Event description")
 
     model_config = ConfigDict(
@@ -27,6 +28,7 @@ class LazyEventReadSchema(BaseModel):
                 "project_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                 "result": "granted",
                 "created_at": "2025-01-01T00:00:00",
+                "updated_at": "2025-01-01T00:00:00",
                 "description": "Event description",
             }
         },
@@ -107,6 +109,7 @@ class EventReadSchema(BaseModel):
     project_id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
     result: str = Field(..., example="granted")
     created_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
+    updated_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
     description: Optional[str] = Field(default=None, example="Event description")
     # identity: LazyIdentityReadSchema
     card: LazyCardReadSchema
@@ -125,6 +128,7 @@ class EventReadSchema(BaseModel):
                 "result": "granted",
                 "description": "Event description",
                 "created_at": "2025-01-01T00:00:00",
+                "updated_at": "2025-01-01T00:00:00",
                 "card": {
                     "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                     "uid": "CARD123456",
@@ -132,6 +136,8 @@ class EventReadSchema(BaseModel):
                     "status": "pending",
                     "activation_code": "123456",
                     "issuer_organization_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                    "created_at": "2025-01-01T00:00:00",
+                    "updated_at": "2025-01-01T00:00:00",
                 },
                 "reader": {
                     "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
@@ -140,6 +146,8 @@ class EventReadSchema(BaseModel):
                     "name": "Reader 1",
                     "location": "Entrance",
                     "status": "active",
+                    "created_at": "2025-01-01T00:00:00",
+                    "updated_at": "2025-01-01T00:00:00",
                 },
                 "project": {
                     "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
@@ -147,6 +155,7 @@ class EventReadSchema(BaseModel):
                     "name": "Example Project",
                     "description": "A sample project description",
                     "created_at": "2025-01-01T00:00:00",
+                    "updated_at": "2025-01-01T00:00:00",
                 },
             }
         },

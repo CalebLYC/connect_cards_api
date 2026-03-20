@@ -4,12 +4,14 @@ from typing import List, Optional
 from uuid import UUID
 
 
-
 class LazyRoleReadSchema(BaseModel):
     id: UUID = Field(..., example="04bcf3f5-cde5-4d27-8a20-2f50076043c5")
     name: str = Field(example="user")
     description: str = Field(example="description")
     created_at: Optional[datetime.datetime] = Field(
+        default=None, example="2025-01-01T00:00:00"
+    )
+    updated_at: Optional[datetime.datetime] = Field(
         default=None, example="2025-01-01T00:00:00"
     )
 
@@ -21,6 +23,7 @@ class LazyRoleReadSchema(BaseModel):
                 "name": "user",
                 "description": "description",
                 "created_at": "2025-01-01T00:00:00",
+                "updated_at": "2025-01-01T00:00:00",
             }
         },
     )
@@ -57,12 +60,17 @@ class RoleUpdateSchema(BaseModel):
 
 
 from app.schemas.permission_schema import PermissionReadSchema
+
+
 class RoleReadSchema(BaseModel):
-    
+
     id: UUID = Field(..., example="04bcf3f5-cde5-4d27-8a20-2f50076043c5")
     name: str = Field(example="user")
     description: str = Field(example="description")
     created_at: Optional[datetime.datetime] = Field(
+        default=None, example="2025-01-01T00:00:00"
+    )
+    updated_at: Optional[datetime.datetime] = Field(
         default=None, example="2025-01-01T00:00:00"
     )
     permissions: List[PermissionReadSchema] = Field(default_factory=list)
@@ -75,7 +83,16 @@ class RoleReadSchema(BaseModel):
                 "name": "user",
                 "description": "description",
                 "created_at": "2025-01-01T00:00:00",
-                "permissions": ["user:read"],
+                "updated_at": "2025-01-01T00:00:00",
+                "permissions": [
+                    {
+                        "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                        "name": "Example Permission",
+                        "description": "A sample permission description",
+                        "created_at": "2025-01-01T00:00:00",
+                        "updated_at": "2025-01-01T00:00:00",
+                    }
+                ],
             }
         },
     )

@@ -4,13 +4,15 @@ from typing import List, Optional
 from uuid import UUID
 
 
-
 class LazyProjectReadSchema(BaseModel):
     id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
     organization_id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
     name: str = Field(..., example="Example Project")
-    description: Optional[str] = Field(default=None, example="A sample project description")
+    description: Optional[str] = Field(
+        default=None, example="A sample project description"
+    )
     created_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
+    updated_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -21,15 +23,18 @@ class LazyProjectReadSchema(BaseModel):
                 "name": "Example Project",
                 "description": "A sample project description",
                 "created_at": "2025-01-01T00:00:00",
+                "updated_at": "2025-01-01T00:00:00",
             }
         },
     )
 
-    
+
 class ProjectCreateSchema(BaseModel):
     organization_id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
     name: str = Field(..., example="Example Project")
-    description: Optional[str] = Field(default=None, example="A sample project description")
+    description: Optional[str] = Field(
+        default=None, example="A sample project description"
+    )
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -44,7 +49,9 @@ class ProjectCreateSchema(BaseModel):
 
 
 class ProjectUpdateSchema(BaseModel):
-    organization_id: Optional[UUID] = Field(default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851")
+    organization_id: Optional[UUID] = Field(
+        default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
+    )
     name: Optional[str] = Field(default=None, example="Updated Project")
     description: Optional[str] = Field(default=None, example="Updated description")
 
@@ -61,20 +68,29 @@ class ProjectUpdateSchema(BaseModel):
 
 
 from app.schemas.organization_schema import LazyOrganizationReadSchema
-from app.schemas.identity_project_permission_schema import LazyIdentityProjectPermissionReadSchema
+from app.schemas.identity_project_permission_schema import (
+    LazyIdentityProjectPermissionReadSchema,
+)
 from app.schemas.reader_schema import LazyReaderReadSchema
+
+
 class ProjectReadSchema(BaseModel):
-    #from app.schemas.event_schema import LazyEventReadSchema
+    # from app.schemas.event_schema import LazyEventReadSchema
 
     id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
     organization_id: UUID = Field(..., example="d290f1ee-6c54-4b01-90e6-d701748f0851")
     name: str = Field(..., example="Example Project")
-    description: Optional[str] = Field(default=None, example="A sample project description")
+    description: Optional[str] = Field(
+        default=None, example="A sample project description"
+    )
     created_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
+    updated_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
     organization: LazyOrganizationReadSchema
-    permissions: List[LazyIdentityProjectPermissionReadSchema] = Field(default_factory=list)
+    permissions: List[LazyIdentityProjectPermissionReadSchema] = Field(
+        default_factory=list
+    )
     readers: List[LazyReaderReadSchema] = Field(default_factory=list)
-    #events: List[LazyEventReadSchema] = Field(default_factory=list)
+    # events: List[LazyEventReadSchema] = Field(default_factory=list)
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -85,15 +101,33 @@ class ProjectReadSchema(BaseModel):
                 "name": "Example Project",
                 "description": "A sample project description",
                 "created_at": "2025-01-01T00:00:00",
+                "updated_at": "2025-01-01T00:00:00",
                 "organization": {
                     "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                     "name": "Example Organization",
                     "type": "Company",
                     "created_at": "2025-01-01T00:00:00",
+                    "updated_at": "2025-01-01T00:00:00",
                 },
-                "permissions": [],
-                "readers": [],
-                #"events": [],
+                "permissions": [
+                    {
+                        "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                        "name": "Example Permission",
+                        "description": "A sample permission description",
+                        "created_at": "2025-01-01T00:00:00",
+                        "updated_at": "2025-01-01T00:00:00",
+                    }
+                ],
+                "readers": [
+                    {
+                        "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                        "name": "Example Reader",
+                        "description": "A sample reader description",
+                        "created_at": "2025-01-01T00:00:00",
+                        "updated_at": "2025-01-01T00:00:00",
+                    }
+                ],
+                # "events": [],
             }
         },
     )

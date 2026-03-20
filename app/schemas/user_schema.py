@@ -3,8 +3,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from typing import List, Optional
 from uuid import UUID
 
-from app.models.user import SexEnum
-
+from app.models.enums.sex_enum import SexEnum
 
 
 class LazyUserReadSchema(BaseModel):
@@ -17,6 +16,9 @@ class LazyUserReadSchema(BaseModel):
         default=None, example="2004-01-01T00:00:00"
     )
     created_at: Optional[datetime.datetime] = Field(
+        default=None, example="2025-01-01T00:00:00"
+    )
+    updated_at: Optional[datetime.datetime] = Field(
         default=None, example="2025-01-01T00:00:00"
     )
     is_active: bool = Field(default=True, example=True)
@@ -37,11 +39,12 @@ class LazyUserReadSchema(BaseModel):
                 "sex": "M",
                 "birthday_date": "2004-01-01T00:00:00",
                 "created_at": "2025-01-01T00:00:00",
+                "updated_at": "2025-01-01T00:00:00",
                 "is_active": True,
                 "is_verified": False,
                 "picture": "https://example.com/picture.jpg",
                 "locale": "en-US",
-                'organization_id': "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                "organization_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
             }
         },
     )
@@ -76,7 +79,7 @@ class UserCreateSchema(BaseModel):
                 "birthday_date": "2004-01-01T00:00:00",
                 "picture": "https://example.com/picture.jpg",
                 "locale": "en-US",
-                'organization_id': "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                "organization_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
             }
         },
     )
@@ -101,7 +104,6 @@ class UserUpdateSchema(BaseModel):
         default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
     )
 
-
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={
@@ -116,7 +118,7 @@ class UserUpdateSchema(BaseModel):
                 "is_verified": True,
                 "picture": "https://example.com/picture.jpg",
                 "locale": "en-US",
-                'organization_id': "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                "organization_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
             }
         },
     )
@@ -125,6 +127,8 @@ class UserUpdateSchema(BaseModel):
 from app.schemas.organization_schema import LazyOrganizationReadSchema
 from app.schemas.permission_schema import PermissionReadSchema
 from app.schemas.role_schema import RoleReadSchema
+
+
 class UserReadSchema(BaseModel):
 
     id: UUID = Field(..., example="04bcf3f5-cde5-4d27-8a20-2f50076043c5")
@@ -136,6 +140,9 @@ class UserReadSchema(BaseModel):
         default=None, example="2004-01-01T00:00:00"
     )
     created_at: Optional[datetime.datetime] = Field(
+        default=None, example="2025-01-01T00:00:00"
+    )
+    updated_at: Optional[datetime.datetime] = Field(
         default=None, example="2025-01-01T00:00:00"
     )
     is_active: bool = Field(default=True, example=True)
@@ -162,19 +169,37 @@ class UserReadSchema(BaseModel):
                 "sex": "M",
                 "birthday_date": "2004-01-01T00:00:00",
                 "created_at": "2025-01-01T00:00:00",
+                "updated_at": "2025-01-01T00:00:00",
                 "is_active": True,
                 "is_verified": False,
                 "picture": "https://example.com/picture.jpg",
                 "locale": "en-US",
                 "organization_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-                "roles": ["user"],
-                "permissions": ["user:read"],
-                'organization': {
-                    'id': 'd290f1ee-6c54-4b01-90e6-d701748f0851',
-                    'name': 'Example Organization',
-                    'description': 'An example organization for testing purposes.',
-                }
-
+                "roles": [
+                    {
+                        "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                        "name": "Example Role",
+                        "description": "A sample role description",
+                        "created_at": "2025-01-01T00:00:00",
+                        "updated_at": "2025-01-01T00:00:00",
+                    }
+                ],
+                "permissions": [
+                    {
+                        "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                        "name": "Example Permission",
+                        "description": "A sample permission description",
+                        "created_at": "2025-01-01T00:00:00",
+                        "updated_at": "2025-01-01T00:00:00",
+                    }
+                ],
+                "organization": {
+                    "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                    "name": "Example Organization",
+                    "type": "Company",
+                    "created_at": "2025-01-01T00:00:00",
+                    "updated_at": "2025-01-01T00:00:00",
+                },
             }
         },
     )

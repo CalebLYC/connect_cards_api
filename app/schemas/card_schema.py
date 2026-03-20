@@ -16,6 +16,7 @@ class LazyCardReadSchema(BaseModel):
         default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
     )
     created_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
+    updated_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -28,6 +29,7 @@ class LazyCardReadSchema(BaseModel):
                 "activation_code": "123456",
                 "issuer_organization_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                 "created_at": "2025-01-01T00:00:00",
+                "updated_at": "2025-01-01T00:00:00",
             }
         },
     )
@@ -51,6 +53,7 @@ class CardReadSchema(BaseModel):
         default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
     )
     created_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
+    updated_at: datetime.datetime = Field(..., example="2025-01-01T00:00:00")
     identity: Optional[LazyIdentityReadSchema] = Field(default=None)
     issuer_organization: Optional[LazyOrganizationReadSchema] = Field(default=None)
     # assignment_history: List[LazyCardAssignmentHistoryReadSchema] = Field(default_factory=list)
@@ -66,17 +69,20 @@ class CardReadSchema(BaseModel):
                 "activation_code": "123456",
                 "issuer_organization_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                 "created_at": "2025-01-01T00:00:00",
+                "updated_at": "2025-01-01T00:00:00",
                 "identity": {
                     "id": "04bcf3f5-cde5-4d27-8a20-2f50076043c5",
                     "email": "jdoe@example.com",
                     "name": "John Doe",
                     "created_at": "2025-01-01T00:00:00",
+                    "updated_at": "2025-01-01T00:00:00",
                 },
                 "issuer_organization": {
                     "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                     "name": "Example Organization",
                     "type": "Company",
                     "created_at": "2025-01-01T00:00:00",
+                    "updated_at": "2025-01-01T00:00:00",
                 },
                 # "assignment_history": [],
             }

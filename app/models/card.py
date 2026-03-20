@@ -24,6 +24,7 @@ class Card(Base):
         UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True
     )
     created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     identity = relationship("Identity", back_populates="cards")
     issuer_organization = relationship("Organization", back_populates="issued_cards")
@@ -35,3 +36,6 @@ class Card(Base):
         Index("idx_cards_identity_id", "identity_id"),
         Index("idx_cards_issuer_organization_id", "issuer_organization_id"),
     )
+
+    def __repr__(self):
+        return f"<Card(id={self.id}, uid={self.uid}, identity_id={self.identity_id}, status={self.status}, activation_code={self.activation_code}, issuer_organization_id={self.issuer_organization_id}, created_at={self.created_at}, updated_at={self.updated_at})>"

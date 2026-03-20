@@ -2,7 +2,7 @@ import datetime
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.models.user import SexEnum
+from app.models.enums.sex_enum import SexEnum
 from app.schemas.user_schema import UserReadSchema, LazyUserReadSchema
 from app.schemas.access_token_schema import AccessTokenReadSchema
 
@@ -34,7 +34,7 @@ class RegisterSchema(BaseModel):
                 "password_confirmation": "12345678",
                 "phone_number": "90000000",
                 "sex": "M",
-                "birthday_date": "2004-01-01",
+                "birthday_date": "2004-01-01T00:00:00",
             }
         },
     )

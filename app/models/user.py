@@ -10,15 +10,12 @@ from sqlalchemy import (
     String,
     ForeignKey,
     Table,
+    func,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.models.base import Base
-
-
-class SexEnum(str, Enum):
-    MALE = "M"
-    FEMALE = "F"
+from app.models.enums.sex_enum import SexEnum
 
 
 # Table d'association User <-> Role
@@ -34,7 +31,12 @@ user_permissions = Table(
     "user_permissions",
     Base.metadata,
     Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True),
-    Column("permission_id", UUID(as_uuid=True), ForeignKey("permissions.id"), primary_key=True),
+    Column(
+        "permission_id",
+        UUID(as_uuid=True),
+        ForeignKey("permissions.id"),
+        primary_key=True,
+    ),
 )
 
 
@@ -59,15 +61,18 @@ class User(Base):
     locale = Column(String(20), nullable=True)
     birthday_date = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    organization_id = Column(
+        UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True
+    )
 
     roles = relationship("Role", secondary=user_roles, backref="users")
-    permissions = relationship("Permission", secondary=user_permissions, backref="users")
+    permissions = relationship(
+        "Permission", secondary=user_permissions, backref="users"
+    )
     organization = relationship("Organization", back_populates="users")
 
-    __table_args__ = (
-        Index("idx_users_organization_id", "organization_id"),
-    )
+    __table_args__ = (Index("idx_users_organization_id", "organization_id"),)
 
     def has_role(self, role_name: str) -> bool:
         """Vérifie si l'utilisateur possède un rôle donné."""
@@ -76,7 +81,7 @@ class User(Base):
     def get_roles(self) -> list:
         """Retourne la liste des noms de rôles de l'utilisateur."""
         return [role.name for role in self.roles]
-    
+
     def has_permission(self, permission_code: str) -> bool:
         """Vérifie si l'utilisateur possède une permission donnée."""
         return any(p_code == permission_code for p_code in self.get_all_permissions())
@@ -84,15 +89,18 @@ class User(Base):
     def get_permissions(self) -> list:
         """Retourne la liste des noms de permissions de l'utilisateur."""
         return [permission.code for permission in self.permissions]
-    
+
     def get_all_permissions(self) -> list:
         """Retourne la liste des noms de permissions de l'utilisateur."""
-        return [permission.code for permission in [perm for role in self.roles for perm in role.permissions] + self.permissions]
+        return [
+            permission.code
+            for permission in [perm for role in self.roles for perm in role.permissions]
+            + self.permissions
+        ]
 
     def is_superuser(self) -> bool:
         """Vérifie si l'utilisateur est un superutilisateur (possède tous les rôles et permissions)."""
         return self.has_role("superadmin")
-    
 
     def __repr__(self):
         return f"<User id={self.id} email={self.email}>"

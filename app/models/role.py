@@ -6,6 +6,7 @@ from sqlalchemy import (
     ForeignKey,
     String,
     Table,
+    func,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -37,8 +38,11 @@ class Role(Base):
     name = Column(String(50), unique=True, nullable=False)
     description = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
     permissions = relationship(
         "Permission", secondary=role_permissions, backref="roles"
     )
-    
+
+    def __repr__(self):
+        return f"<Role(id={self.id}, name={self.name}, description={self.description}, created_at={self.created_at}, updated_at={self.updated_at})>"

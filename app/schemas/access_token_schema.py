@@ -18,6 +18,7 @@ class AccessTokenReadSchema(AccessTokenBaseSchema):
     id: UUID
     # user: UserReadSchema
     created_at: datetime.datetime
+    updated_at: datetime.datetime
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -40,6 +41,7 @@ class AccessTokenReadSchema(AccessTokenBaseSchema):
                     "permissions": ["user:read"],
                 },
                 "created_at": "2023-10-01T12:00:00Z",
+                "updated_at": "2023-10-01T12:00:00Z",
             }
         },
     )

@@ -42,6 +42,9 @@ class PermissionReadSchema(BaseModel):
     created_at: Optional[datetime.datetime] = Field(
         default=None, example="2025-01-01T00:00:00"
     )
+    updated_at: Optional[datetime.datetime] = Field(
+        default=None, example="2025-01-01T00:00:00"
+    )
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -51,6 +54,7 @@ class PermissionReadSchema(BaseModel):
                 "code": "user:read",
                 "description": "Can read user data",
                 "created_at": "2025-01-01T00:00:00",
+                "updated_at": "2025-01-01T00:00:00",
             }
         },
     )

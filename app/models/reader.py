@@ -5,6 +5,8 @@ from sqlalchemy import (
     Index,
     String,
     UniqueConstraint,
+    DateTime,
+    func,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -20,6 +22,8 @@ class Reader(Base):
     name = Column(String)
     location = Column(String)
     status = Column(String, default="active")
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     organization = relationship("Organization", back_populates="readers")
     project = relationship("Project", back_populates="readers")
@@ -30,3 +34,6 @@ class Reader(Base):
         Index("idx_readers_organization_id", "organization_id"),
         Index("idx_readers_project_id", "project_id"),
     )
+
+    def __repr__(self):
+        return f"<Reader(id={self.id}, organization_id={self.organization_id}, project_id={self.project_id}, name={self.name}, location={self.location}, status={self.status})>"
