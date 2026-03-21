@@ -16,3 +16,8 @@ alembic_dev.ini
 alembic_test.ini
 alembic_staging.ini
 alembic_prod.ini
+
+performance_audit.md
+performance_implementation_plan.md
+security_audit.md
+security_implementation_plan.md
