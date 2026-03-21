@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
 from typing import List
-from app.providers.auth_provider import require_permission
+
+from app.providers.auth_provider import require_permission, require_role
 from app.providers.service_providers import get_event_service
 from app.schemas.event_schema import (
     EventReadSchema,
@@ -15,11 +16,17 @@ router = APIRouter(
     prefix="/events",
     tags=["Events"],
     # dependencies=[require_permission("event:manage")],
+    # dependencies=[require_role("superadmin")],
     responses=http_status.router_responses,
 )
 
 
-@router.get("/", response_model=List[EventReadSchema], summary="List events")
+@router.get(
+    "/",
+    response_model=List[EventReadSchema],
+    summary="List events",
+    dependencies=[require_role("admin")],
+)
 async def list_events(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -29,7 +36,12 @@ async def list_events(
     return await service.list_events(skip=skip, limit=limit, eager=eager)
 
 
-@router.get("/{id}", response_model=EventReadSchema, summary="Get event by ID")
+@router.get(
+    "/{id}",
+    response_model=EventReadSchema,
+    summary="Get event by ID",
+    dependencies=[require_role("admin")],
+)
 async def get_event(
     id: str = Path(..., min_length=24, max_length=36),
     eager: bool = Query(True),
@@ -43,6 +55,7 @@ async def get_event(
     response_model=LazyEventReadSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Create event",
+    dependencies=[require_role("superadmin")],
 )
 async def create_event(
     event_create: EventCreateSchema,
@@ -52,17 +65,29 @@ async def create_event(
     return await service.create_event(event_create, background_tasks=background_tasks)
 
 
-@router.put("/{id}", response_model=LazyEventReadSchema, summary="Update event")
+@router.put(
+    "/{id}",
+    response_model=LazyEventReadSchema,
+    summary="Update event",
+    dependencies=[require_role("superadmin")],
+)
 async def update_event(
     id: str = Path(..., min_length=24, max_length=36),
     event_update: EventUpdateSchema = ...,
     background_tasks: BackgroundTasks = None,
     service: EventService = Depends(get_event_service),
 ):
-    return await service.update_event(id, event_update, background_tasks=background_tasks)
+    return await service.update_event(
+        id, event_update, background_tasks=background_tasks
+    )
 
 
-@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete event")
+@router.delete(
+    "/{id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete event",
+    dependencies=[require_role("superadmin")],
+)
 async def delete_event(
     id: str = Path(..., min_length=24, max_length=36),
     service: EventService = Depends(get_event_service),
@@ -71,7 +96,12 @@ async def delete_event(
     return {"detail": "Event deleted"}
 
 
-@router.delete("/", status_code=status.HTTP_204_NO_CONTENT, summary="Delete all events")
+@router.delete(
+    "/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete all events",
+    dependencies=[require_role("superadmin")],
+)
 async def delete_all_events(
     service: EventService = Depends(get_event_service),
 ):

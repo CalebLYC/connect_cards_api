@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
 from typing import List
 from uuid import UUID
-from app.providers.auth_provider import require_permission
+
+from app.providers.auth_provider import require_permission, require_role
 from app.providers.service_providers import get_card_service
 from app.schemas.card_schema import (
     CardReadSchema,
@@ -22,7 +23,7 @@ from app.utils.constants import http_status
 router = APIRouter(
     prefix="/cards",
     tags=["Cards"],
-    # dependencies=[require_permission("card:manage")],
+    # dependencies=[require_permission("card:manage", verify_org=True)],
     responses=http_status.router_responses,
 )
 
@@ -33,11 +34,17 @@ async def list_cards(
     limit: int = Query(100, ge=1, le=1000),
     eager: bool = Query(True),
     service: CardService = Depends(get_card_service),
+    dependencies=[require_role("admin")],
 ):
     return await service.list_cards(skip=skip, limit=limit, eager=eager)
 
 
-@router.get("/{id}", response_model=CardReadSchema, summary="Get card by ID")
+@router.get(
+    "/{id}",
+    response_model=CardReadSchema,
+    summary="Get card by ID",
+    dependencies=[require_permission("card:manage", verify_org=True)],
+)
 async def get_card(
     id: str = Path(..., min_length=24, max_length=36),
     eager: bool = Query(True),
@@ -46,7 +53,12 @@ async def get_card(
     return await service.get_card(id, eager=eager)
 
 
-@router.get("/uid/{uid}", response_model=CardReadSchema, summary="Get card by UID")
+@router.get(
+    "/uid/{uid}",
+    response_model=CardReadSchema,
+    summary="Get card by UID",
+    dependencies=[require_permission("card:manage", verify_org=True)],
+)
 async def get_card_by_uid(
     uid: str = Path(...),
     service: CardService = Depends(get_card_service),
@@ -83,6 +95,7 @@ async def scan_card(
     "/revoke/{uid}",
     response_model=CardActivationResponse,
     summary="Revoke card assignment",
+    dependencies=[require_permission("card:manage", verify_org=True)],
 )
 async def revoke_card(
     uid: str = Path(...),
@@ -121,6 +134,7 @@ async def activate_card(
     response_model=LazyCardReadSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Create card",
+    dependencies=[require_permission("card:manage", verify_org=True)],
 )
 async def create_card(
     card_create: CardCreateSchema,
@@ -133,7 +147,12 @@ async def create_card(
     return await service.create_card(card_create, background_tasks=background_tasks)
 
 
-@router.put("/{id}", response_model=LazyCardReadSchema, summary="Update card")
+@router.put(
+    "/{id}",
+    response_model=LazyCardReadSchema,
+    summary="Update card",
+    dependencies=[require_permission("card:manage", verify_org=True)],
+)
 async def update_card(
     id: str = Path(..., min_length=24, max_length=36),
     card_update: CardUpdateSchema = ...,
@@ -146,7 +165,12 @@ async def update_card(
     return await service.update_card(id, card_update, background_tasks=background_tasks)
 
 
-@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete card")
+@router.delete(
+    "/{id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete card",
+    dependencies=[require_permission("card:manage", verify_org=True)],
+)
 async def delete_card(
     id: str = Path(..., min_length=24, max_length=36),
     background_tasks: BackgroundTasks = None,
@@ -156,7 +180,12 @@ async def delete_card(
     return {"detail": "Card deleted"}
 
 
-@router.delete("/", status_code=status.HTTP_204_NO_CONTENT, summary="Delete all cards")
+@router.delete(
+    "/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete all cards",
+    dependencies=[require_role("superadmin")],
+)
 async def delete_all_cards(
     service: CardService = Depends(get_card_service),
 ):

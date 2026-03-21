@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query, Path, status
 from typing import List
-from app.providers.auth_provider import require_permission
+
+from app.providers.auth_provider import require_permission, require_role
 from app.providers.service_providers import get_card_assignment_history_service
 from app.schemas.card_assignment_history_schema import (
     CardAssignmentHistoryReadSchema,
@@ -16,13 +17,16 @@ from app.utils.constants import http_status
 router = APIRouter(
     prefix="/card-assignment-histories",
     tags=["Card Assignment Histories"],
-    # dependencies=[require_permission("card:manage")],
+    # dependencies=[require_role("superadmin")],
     responses=http_status.router_responses,
 )
 
 
 @router.get(
-    "/", response_model=List[CardAssignmentHistoryReadSchema], summary="List histories"
+    "/",
+    response_model=List[CardAssignmentHistoryReadSchema],
+    summary="List histories",
+    dependencies=[require_role("admin")],
 )
 async def list_histories(
     skip: int = Query(0, ge=0),
@@ -36,7 +40,10 @@ async def list_histories(
 
 
 @router.get(
-    "/{id}", response_model=CardAssignmentHistoryReadSchema, summary="Get history by ID"
+    "/{id}",
+    response_model=CardAssignmentHistoryReadSchema,
+    summary="Get history by ID",
+    dependencies=[require_role("admin")],
 )
 async def get_history(
     id: str = Path(..., min_length=24, max_length=36),
@@ -53,6 +60,7 @@ async def get_history(
     response_model=LazyCardAssignmentHistoryReadSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Create history record",
+    dependencies=[require_role("superadmin")],
 )
 async def create_history(
     history_create: CardAssignmentHistoryCreateSchema,
@@ -67,6 +75,7 @@ async def create_history(
     "/{id}",
     response_model=LazyCardAssignmentHistoryReadSchema,
     summary="Update history record",
+    dependencies=[require_role("superadmin")],
 )
 async def update_history(
     id: str = Path(..., min_length=24, max_length=36),
@@ -79,7 +88,10 @@ async def update_history(
 
 
 @router.delete(
-    "/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete history record"
+    "/{id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete history record",
+    dependencies=[require_role("superadmin")],
 )
 async def delete_history(
     id: str = Path(..., min_length=24, max_length=36),
@@ -92,7 +104,10 @@ async def delete_history(
 
 
 @router.delete(
-    "/", status_code=status.HTTP_204_NO_CONTENT, summary="Delete all histories"
+    "/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete all histories",
+    dependencies=[require_role("superadmin")],
 )
 async def delete_all_histories(
     service: CardAssignmentHistoryService = Depends(

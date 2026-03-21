@@ -1,13 +1,16 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 
 from app.core.jwt import JWTUtils
-from app.providers.service_providers import  get_user_service
+from app.providers.service_providers import get_user_service
 from app.repositories.access_token_repository import AccessTokenRepository
 from app.repositories.user_repository import UserRepository
 from app.models.user import User
-from app.providers.repository_providers import get_access_token_repository, get_user_repository
+from app.providers.repository_providers import (
+    get_access_token_repository,
+    get_user_repository,
+)
 from app.services.auth.user_service import UserService
 
 
@@ -79,25 +82,64 @@ async def auth_middleware(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Error getting user by token: {str(e)}",
         )
 
 
-def require_permission(permission_code: str) -> Depends:
+async def _verify_organization_access(request: Request, user: User) -> None:
+    if user.is_superuser() or user.has_role("admin") or user.has_role("system_admin"):
+        return
+
+    if not user.organization_id:
+        raise HTTPException(
+            status_code=403, detail="User is not assigned to an organization."
+        )
+
+    target_org_id = request.path_params.get("organization_id")
+    if not target_org_id:
+        target_org_id = request.query_params.get("organization_id")
+
+    if not target_org_id and request.method in ["POST", "PUT", "PATCH"]:
+        try:
+            body = await request.json()
+            if isinstance(body, dict):
+                target_org_id = body.get("organization_id")
+        except Exception:
+            pass
+
+    if target_org_id and str(user.organization_id) != str(target_org_id):
+        raise HTTPException(
+            status_code=403,
+            detail="You are not authorized to perform operations on this organization.",
+        )
+
+    if not target_org_id:
+        raise HTTPException(
+            status_code=403,
+            detail="organization_id is required for this operation.",
+        )
+
+
+def require_permission(permission_code: str, verify_org: bool = True) -> Depends:
     try:
 
         async def dependency(
+            request: Request,
             user: User = Depends(auth_middleware),
             ps: UserService = Depends(get_user_service),
         ):
             try:
                 if user.is_superuser():
-                    return True
-                
+                    return user
+
                 await ps.ensure_permission(
                     user=user,
                     permission_code=permission_code,
                 )
+
+                if verify_org:
+                    await _verify_organization_access(request, user)
+
+                return user
             except HTTPException as e:
                 raise e
             except Exception as e:
@@ -116,20 +158,24 @@ def require_permission(permission_code: str) -> Depends:
         )
 
 
-def require_role(role_name: str) -> Depends:
+def require_role(role_name: str, verify_org: bool = False) -> Depends:
     try:
 
         async def dependency(
+            request: Request,
             user: User = Depends(auth_middleware),
             rs: UserService = Depends(get_user_service),
         ):
             try:
                 if user.is_superuser():
-                    return True
-                
-                await rs.ensure_role(
-                    user=user, role_name=role_name
-                )
+                    return user
+
+                await rs.ensure_role(user=user, role_name=role_name)
+
+                if verify_org:
+                    await _verify_organization_access(request, user)
+
+                return user
             except HTTPException as e:
                 raise e
             except Exception as e:

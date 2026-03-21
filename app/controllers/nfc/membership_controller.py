@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
 from typing import List
-from app.providers.auth_provider import require_permission
+
+from app.providers.auth_provider import require_permission, require_role
 from app.providers.service_providers import get_membership_service
 from app.schemas.membership_schema import (
     MembershipReadSchema,
@@ -14,7 +15,7 @@ from app.utils.constants import http_status
 router = APIRouter(
     prefix="/memberships",
     tags=["Memberships"],
-    # dependencies=[require_permission("membership:manage")],
+    dependencies=[require_permission("membership:manage", verify_org=True)],
     responses=http_status.router_responses,
 )
 
@@ -25,6 +26,7 @@ async def list_memberships(
     limit: int = Query(100, ge=1, le=1000),
     eager: bool = Query(True),
     service: MembershipService = Depends(get_membership_service),
+    dependencies=[require_role("admin")],
 ):
     return await service.list_memberships(skip=skip, limit=limit, eager=eager)
 
@@ -71,7 +73,10 @@ async def update_membership(
 
 
 @router.delete(
-    "/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete membership"
+    "/{id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete membership",
+    # dependencies=[require_role("admin")],
 )
 async def delete_membership(
     id: str = Path(..., min_length=24, max_length=36),
@@ -83,7 +88,10 @@ async def delete_membership(
 
 
 @router.delete(
-    "/", status_code=status.HTTP_204_NO_CONTENT, summary="Delete all memberships"
+    "/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete all memberships",
+    dependencies=[require_role("superadmin")],
 )
 async def delete_all_memberships(
     service: MembershipService = Depends(get_membership_service),

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
 from typing import List
-from app.providers.auth_provider import require_permission
+
+from app.providers.auth_provider import require_permission, require_role
 from app.providers.service_providers import get_identity_service
 from app.schemas.identity_schema import (
     IdentityReadSchema,
@@ -14,12 +15,17 @@ from app.utils.constants import http_status
 router = APIRouter(
     prefix="/identities",
     tags=["Identities"],
-    # dependencies=[require_permission("identity:manage")],
+    dependencies=[require_permission("identity:manage", verify_org=True)],
     responses=http_status.router_responses,
 )
 
 
-@router.get("/", response_model=List[IdentityReadSchema], summary="List identities")
+@router.get(
+    "/",
+    response_model=List[IdentityReadSchema],
+    summary="List identities",
+    dependencies=[require_role("admin")],
+)
 async def list_identities(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -80,7 +86,10 @@ async def delete_identity(
 
 
 @router.delete(
-    "/", status_code=status.HTTP_204_NO_CONTENT, summary="Delete all identities"
+    "/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete all identities",
+    dependencies=[require_role("superadmin")],
 )
 async def delete_all_identities(
     service: IdentityService = Depends(get_identity_service),

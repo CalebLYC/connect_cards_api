@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
 from typing import List
-from app.providers.auth_provider import require_permission
+import uuid
+
 from app.providers.service_providers import get_identity_project_permission_service
 from app.schemas.identity_project_permission_schema import (
     IdentityProjectPermissionReadSchema,
@@ -12,12 +13,13 @@ from app.services.nfc.identity_project_permission_service import (
     IdentityProjectPermissionService,
 )
 from app.utils.constants import http_status
-import uuid
+from app.providers.auth_provider import require_role, require_permission
+
 
 router = APIRouter(
     prefix="/identity-project-permissions",
     tags=["Identity Project Permissions"],
-    # dependencies=[require_permission("permission:manage")],
+    dependencies=[require_permission("project:permission:manage", verify_org=True)],
     responses=http_status.router_responses,
 )
 
@@ -26,6 +28,7 @@ router = APIRouter(
     "/",
     response_model=List[IdentityProjectPermissionReadSchema],
     summary="List permissions",
+    dependencies=[require_role("admin")],
 )
 async def list_permissions(
     skip: int = Query(0, ge=0),
@@ -49,6 +52,7 @@ async def get_permission(
     service: IdentityProjectPermissionService = Depends(
         get_identity_project_permission_service
     ),
+    dependencies=[require_role("admin")],
 ):
     return await service.get_permission(id, eager=eager)
 
@@ -75,6 +79,7 @@ async def create_permission(
     "/{id}",
     response_model=LazyIdentityProjectPermissionReadSchema,
     summary="Update permission",
+    dependencies=[require_role("admin")],
 )
 async def update_permission(
     id: str = Path(..., min_length=24, max_length=36),
@@ -90,7 +95,10 @@ async def update_permission(
 
 
 @router.delete(
-    "/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete permission"
+    "/{id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete permission",
+    dependencies=[require_role("admin")],
 )
 async def delete_permission(
     id: str = Path(..., min_length=24, max_length=36),
@@ -104,7 +112,10 @@ async def delete_permission(
 
 
 @router.delete(
-    "/", status_code=status.HTTP_204_NO_CONTENT, summary="Delete all permissions"
+    "/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete all permissions",
+    dependencies=[require_role("superadmin")],
 )
 async def delete_all_permissions(
     service: IdentityProjectPermissionService = Depends(

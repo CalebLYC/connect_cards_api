@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query, Path, status
 from typing import List
-from app.providers.auth_provider import require_permission
+
+from app.providers.auth_provider import require_permission, require_role
 from app.providers.service_providers import get_project_service
 from app.schemas.project_schema import (
     ProjectReadSchema,
@@ -14,12 +15,17 @@ from app.utils.constants import http_status
 router = APIRouter(
     prefix="/projects",
     tags=["Projects"],
-    # dependencies=[require_permission("project:manage")],
+    dependencies=[require_permission("project:manage", verify_org=True)],
     responses=http_status.router_responses,
 )
 
 
-@router.get("/", response_model=List[ProjectReadSchema], summary="List projects")
+@router.get(
+    "/",
+    response_model=List[ProjectReadSchema],
+    summary="List projects",
+    dependencies=[require_role("admin")],
+)
 async def list_projects(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -72,7 +78,10 @@ async def delete_project(
 
 
 @router.delete(
-    "/", status_code=status.HTTP_204_NO_CONTENT, summary="Delete all projects"
+    "/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete all projects",
+    dependencies=[require_role("superadmin")],
 )
 async def delete_all_projects(
     service: ProjectService = Depends(get_project_service),

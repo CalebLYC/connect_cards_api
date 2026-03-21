@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query, Path, status
 from typing import List
-from app.providers.auth_provider import require_permission
+
+from app.providers.auth_provider import require_permission, require_role
 from app.providers.service_providers import get_organization_service
 from app.schemas.organization_schema import (
     OrganizationReadSchema,
@@ -14,13 +15,16 @@ from app.utils.constants import http_status
 router = APIRouter(
     prefix="/organizations",
     tags=["Organizations"],
-    # dependencies=[require_permission("organization:manage")],
+    dependencies=[require_permission("organization:own", verify_org=True)],
     responses=http_status.router_responses,
 )
 
 
 @router.get(
-    "/", response_model=List[OrganizationReadSchema], summary="List organizations"
+    "/",
+    response_model=List[OrganizationReadSchema],
+    summary="List organizations",
+    dependencies=[require_role("admin")],
 )
 async def list_organizations(
     skip: int = Query(0, ge=0),
@@ -47,6 +51,7 @@ async def get_organization(
     response_model=LazyOrganizationReadSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Create organization",
+    dependencies=[require_role("admin")],
 )
 async def create_organization(
     organization_create: OrganizationCreateSchema,
@@ -78,7 +83,10 @@ async def delete_organization(
 
 
 @router.delete(
-    "/", status_code=status.HTTP_204_NO_CONTENT, summary="Delete all organizations"
+    "/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete all organizations",
+    dependencies=[require_role("superadmin")],
 )
 async def delete_all_organizations(
     service: OrganizationService = Depends(get_organization_service),

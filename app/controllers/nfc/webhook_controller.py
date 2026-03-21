@@ -1,5 +1,7 @@
 from typing import List
 from fastapi import APIRouter, Depends, status, Query
+
+from app.providers.auth_provider import require_permission, require_role
 from app.services.nfc.webhook_service import WebhookService
 from app.schemas.webhook_schema import (
     WebhookReadSchema,
@@ -8,7 +10,11 @@ from app.schemas.webhook_schema import (
 )
 from app.providers.service_providers import get_webhook_service
 
-router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
+router = APIRouter(
+    prefix="/webhooks",
+    tags=["Webhooks"],
+    dependencies=[require_permission("webhook:manage", verify_org=True)],
+)
 
 
 @router.post("/", response_model=WebhookReadSchema, status_code=status.HTTP_201_CREATED)
@@ -19,7 +25,11 @@ async def create_webhook(
     return await service.create_webhook(webhook)
 
 
-@router.get("/", response_model=List[WebhookReadSchema])
+@router.get(
+    "/",
+    response_model=List[WebhookReadSchema],
+    dependencies=[require_role("admin")],
+)
 async def list_webhooks(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
