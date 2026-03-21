@@ -90,15 +90,22 @@ class ReaderService:
 
     async def list_readers(
         self,
-        filters: Dict[str, Any] = None,
         skip: int = 0,
         limit: int = 100,
+        organization_id: Optional[Any] = None,
+        project_id: Optional[Any] = None,
+        name: Optional[str] = None,
+        status: Optional[str] = None,
         eager: bool = False,
     ) -> List[ReaderReadSchema]:
         if eager:
-            readers = await self.reader_repos.find_many_eager(filters, skip, limit)
+            readers = await self.reader_repos.list_eager(
+                skip, limit, organization_id, project_id, name, status
+            )
         else:
-            readers = await self.reader_repos.find_many(filters, skip, limit)
+            readers = await self.reader_repos.list(
+                skip, limit, organization_id, project_id, name, status
+            )
         return [ReaderReadSchema.model_validate(r) for r in readers]
 
     async def create_reader(

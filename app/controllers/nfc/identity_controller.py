@@ -6,7 +6,7 @@ from fastapi import (
     BackgroundTasks,
     Path,
 )
-from typing import List
+from typing import List, Optional
 
 from app.providers.auth_provider import require_permission, require_role
 from app.providers.service_providers import get_identity_service
@@ -31,19 +31,30 @@ router = APIRouter(
     "/",
     response_model=List[IdentityReadSchema],
     summary="List identities",
-    dependencies=[require_role("admin")],
+    dependencies=[require_permission("identity:read", verify_org=True)],
 )
 async def list_identities(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    organization_id: Optional[str] = Query(None),
+    name: Optional[str] = Query(None),
     all: bool = Query(False),
     eager: bool = Query(True),
     service: IdentityService = Depends(get_identity_service),
 ):
-    return await service.list_identitys(skip=skip, limit=limit, all=all, eager=eager)
+    return await service.list_identitys(
+        skip=skip,
+        limit=limit,
+        organization_id=organization_id,
+        name=name,
+        all=all,
+        eager=eager,
+    )
 
 
-@router.get("/{identity_id}", response_model=IdentityReadSchema, summary="Get identity by ID")
+@router.get(
+    "/{identity_id}", response_model=IdentityReadSchema, summary="Get identity by ID"
+)
 async def get_identity(
     identity_id: str = Path(..., min_length=24, max_length=36),
     eager: bool = Query(True),
@@ -68,7 +79,9 @@ async def create_identity(
     )
 
 
-@router.put("/{identity_id}", response_model=LazyIdentityReadSchema, summary="Update identity")
+@router.put(
+    "/{identity_id}", response_model=LazyIdentityReadSchema, summary="Update identity"
+)
 async def update_identity(
     identity_id: str = Path(..., min_length=24, max_length=36),
     identity_update: IdentityUpdateSchema = ...,

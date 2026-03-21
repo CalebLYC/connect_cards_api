@@ -49,12 +49,16 @@ class IdentityService:
                 )
             elif self.event_dispatcher:
                 import asyncio
-                await self.event_dispatcher.dispatch_event(created_event, background_tasks)
+
+                await self.event_dispatcher.dispatch_event(
+                    created_event, background_tasks
+                )
 
         if background_tasks:
             background_tasks.add_task(_save_and_trigger_event)
         else:
             import asyncio
+
             asyncio.create_task(_save_and_trigger_event())
 
     async def get_identity(
@@ -103,13 +107,21 @@ class IdentityService:
         return IdentityReadSchema.model_validate(identity)
 
     async def list_identitys(
-        self, skip: int = 0, limit: int = 100, all: bool = False, eager: bool = False
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        name: Optional[str] = None,
+        all: bool = False,
+        eager: bool = False,
     ) -> List[IdentityReadSchema]:
         """List identities with pagination.
 
         Args:
             skip (int, optional): Number of identities to skip. Defaults to 0.
             limit (int, optional): Maximum number of identities to return. Defaults to 100.
+            organization_id (Optional[Any]): Filter by organization id.
+            name (Optional[str]): Filter by name (case-insensitive partial match).
             all (bool, optional): If True, return all identities without pagination. Defaults to False.
             eager (bool, optional): If True, use eager loading for relationships. Defaults to False.
         Returns:
@@ -117,11 +129,19 @@ class IdentityService:
         """
         if eager:
             identitys = await self.identity_repos.list_identities_eager(
-                skip=skip, limit=limit, all=all
+                skip=skip,
+                limit=limit,
+                organization_id=organization_id,
+                name=name,
+                all=all,
             )
         else:
             identitys = await self.identity_repos.list_identities(
-                skip=skip, limit=limit, all=all
+                skip=skip,
+                limit=limit,
+                organization_id=organization_id,
+                name=name,
+                all=all,
             )
         return [IdentityReadSchema.model_validate(u) for u in identitys]
 

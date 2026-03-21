@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status, Query, BackgroundTasks, Path
-from typing import List
+from typing import List, Optional
 
 from app.providers.auth_provider import require_permission, require_role
 from app.providers.service_providers import get_event_service
@@ -25,22 +25,32 @@ router = APIRouter(
     "/",
     response_model=List[EventReadSchema],
     summary="List events",
-    dependencies=[require_role("admin")],
+    dependencies=[require_permission("event:read", verify_org=True)],
 )
 async def list_events(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    organization_id: Optional[str] = Query(None),
+    project_id: Optional[str] = Query(None),
+    event_type: Optional[str] = Query(None),
     eager: bool = Query(True),
     service: EventService = Depends(get_event_service),
 ):
-    return await service.list_events(skip=skip, limit=limit, eager=eager)
+    return await service.list_events(
+        skip=skip,
+        limit=limit,
+        organization_id=organization_id,
+        project_id=project_id,
+        event_type=event_type,
+        eager=eager,
+    )
 
 
 @router.get(
     "/{event_id}",
     response_model=EventReadSchema,
     summary="Get event by ID",
-    dependencies=[require_role("admin")],
+    dependencies=[require_permission("event:read", verify_org=True)],
 )
 async def get_event(
     event_id: str = Path(..., min_length=24, max_length=36),

@@ -47,15 +47,21 @@ class EventService:
 
     async def list_events(
         self,
-        filters: Dict[str, Any] = None,
         skip: int = 0,
         limit: int = 100,
+        organization_id: Optional[Any] = None,
+        project_id: Optional[Any] = None,
+        event_type: Optional[str] = None,
         eager: bool = False,
     ) -> List[EventReadSchema]:
         if eager:
-            events = await self.event_repos.find_many_eager(filters, skip, limit)
+            events = await self.event_repos.list_eager(
+                skip, limit, organization_id, project_id, event_type
+            )
         else:
-            events = await self.event_repos.find_many(filters, skip, limit)
+            events = await self.event_repos.list(
+                skip, limit, organization_id, project_id, event_type
+            )
         return [EventReadSchema.model_validate(e) for e in events]
 
     async def create_event(

@@ -63,21 +63,54 @@ class MembershipRepository:
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def list(self, skip: int = 0, limit: int = 100) -> List[Membership]:
-        stmt = select(Membership).offset(skip).limit(limit)
+    async def list(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        identity_id: Optional[Any] = None,
+        status: Optional[str] = None,
+    ) -> List[Membership]:
+        stmt = select(Membership)
+        if organization_id:
+            if isinstance(organization_id, str):
+                organization_id = uuid.UUID(organization_id)
+            stmt = stmt.where(Membership.organization_id == organization_id)
+        if identity_id:
+            if isinstance(identity_id, str):
+                identity_id = uuid.UUID(identity_id)
+            stmt = stmt.where(Membership.identity_id == identity_id)
+        if status:
+            stmt = stmt.where(Membership.status == status)
+
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def list_eager(self, skip: int = 0, limit: int = 100) -> List[Membership]:
-        stmt = (
-            select(Membership)
-            .options(
-                selectinload(Membership.identity),
-                selectinload(Membership.organization),
-            )
-            .offset(skip)
-            .limit(limit)
+    async def list_eager(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        identity_id: Optional[Any] = None,
+        status: Optional[str] = None,
+    ) -> List[Membership]:
+        stmt = select(Membership).options(
+            selectinload(Membership.identity),
+            selectinload(Membership.organization),
         )
+        if organization_id:
+            if isinstance(organization_id, str):
+                organization_id = uuid.UUID(organization_id)
+            stmt = stmt.where(Membership.organization_id == organization_id)
+        if identity_id:
+            if isinstance(identity_id, str):
+                identity_id = uuid.UUID(identity_id)
+            stmt = stmt.where(Membership.identity_id == identity_id)
+        if status:
+            stmt = stmt.where(Membership.status == status)
+
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 

@@ -145,15 +145,21 @@ class CardService:
 
     async def list_cards(
         self,
-        filters: Dict[str, Any] = None,
         skip: int = 0,
         limit: int = 100,
+        issuer_organization_id: Optional[Any] = None,
+        card_type: Optional[str] = None,
+        status: Optional[str] = None,
         eager: bool = False,
     ) -> List[CardReadSchema]:
         if eager:
-            cards = await self.card_repos.find_many_eager(filters, skip, limit)
+            cards = await self.card_repos.list_eager(
+                skip, limit, issuer_organization_id, card_type, status
+            )
         else:
-            cards = await self.card_repos.find_many(filters, skip, limit)
+            cards = await self.card_repos.list(
+                skip, limit, issuer_organization_id, card_type, status
+            )
         return [CardReadSchema.model_validate(c) for c in cards]
 
     async def create_card(

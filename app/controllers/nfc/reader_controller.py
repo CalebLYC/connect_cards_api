@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status, Query, BackgroundTasks, Path
-from typing import List
+from typing import List, Optional
 
 from app.providers.auth_provider import require_permission, require_role
 from app.providers.service_providers import get_reader_service
@@ -24,15 +24,27 @@ router = APIRouter(
     "/",
     response_model=List[ReaderReadSchema],
     summary="List readers",
-    dependencies=[require_role("admin")],
+    dependencies=[require_permission("reader:read", verify_org=True)],
 )
 async def list_readers(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    organization_id: Optional[str] = Query(None),
+    project_id: Optional[str] = Query(None),
+    name: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
     eager: bool = Query(True),
     service: ReaderService = Depends(get_reader_service),
 ):
-    return await service.list_readers(skip=skip, limit=limit, eager=eager)
+    return await service.list_readers(
+        skip=skip,
+        limit=limit,
+        organization_id=organization_id,
+        project_id=project_id,
+        name=name,
+        status=status,
+        eager=eager,
+    )
 
 
 @router.get("/{reader_id}", response_model=ReaderReadSchema, summary="Get reader by ID")
@@ -58,7 +70,9 @@ async def create_reader(
     return await service.create_reader(reader_create, background_tasks=background_tasks)
 
 
-@router.put("/{reader_id}", response_model=LazyReaderReadSchema, summary="Update reader")
+@router.put(
+    "/{reader_id}", response_model=LazyReaderReadSchema, summary="Update reader"
+)
 async def update_reader(
     reader_id: str = Path(..., min_length=24, max_length=36),
     reader_update: ReaderUpdateSchema = ...,
@@ -70,7 +84,9 @@ async def update_reader(
     )
 
 
-@router.delete("/{reader_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete reader")
+@router.delete(
+    "/{reader_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete reader"
+)
 async def delete_reader(
     reader_id: str = Path(..., min_length=24, max_length=36),
     service: ReaderService = Depends(get_reader_service),

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, status, Query, BackgroundTasks, Path
 
@@ -32,11 +32,21 @@ router = APIRouter(
 async def list_cards(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    issuer_organization_id: Optional[str] = Query(None),
+    card_type: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
     eager: bool = Query(True),
     service: CardService = Depends(get_card_service),
-    dependencies=[require_role("admin")],
+    dependencies=[require_permission("card:read", verify_org=True)],
 ):
-    return await service.list_cards(skip=skip, limit=limit, eager=eager)
+    return await service.list_cards(
+        skip=skip,
+        limit=limit,
+        issuer_organization_id=issuer_organization_id,
+        card_type=card_type,
+        status=status,
+        eager=eager,
+    )
 
 
 @router.get(

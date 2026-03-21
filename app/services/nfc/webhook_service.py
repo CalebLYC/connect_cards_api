@@ -27,9 +27,13 @@ class WebhookService:
         return WebhookReadSchema.model_validate(webhook)
 
     async def list_webhooks(
-        self, skip: int = 0, limit: int = 100
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        is_active: Optional[bool] = None,
     ) -> List[WebhookReadSchema]:
-        webhooks = await self.webhook_repos.list(skip, limit)
+        webhooks = await self.webhook_repos.list(skip, limit, organization_id, is_active)
         return [WebhookReadSchema.model_validate(w) for w in webhooks]
 
     async def create_webhook(

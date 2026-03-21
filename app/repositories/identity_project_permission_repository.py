@@ -62,24 +62,65 @@ class IdentityProjectPermissionRepository:
         return result.scalars().all()
 
     async def list(
-        self, skip: int = 0, limit: int = 100
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        identity_id: Optional[Any] = None,
+        project_id: Optional[Any] = None,
     ) -> List[IdentityProjectPermission]:
-        stmt = select(IdentityProjectPermission).offset(skip).limit(limit)
+        from app.models.project import Project
+
+        stmt = select(IdentityProjectPermission)
+        if organization_id:
+            if isinstance(organization_id, str):
+                organization_id = uuid.UUID(organization_id)
+            stmt = stmt.join(IdentityProjectPermission.project).where(
+                Project.organization_id == organization_id
+            )
+        if identity_id:
+            if isinstance(identity_id, str):
+                identity_id = uuid.UUID(identity_id)
+            stmt = stmt.where(IdentityProjectPermission.identity_id == identity_id)
+        if project_id:
+            if isinstance(project_id, str):
+                project_id = uuid.UUID(project_id)
+            stmt = stmt.where(IdentityProjectPermission.project_id == project_id)
+
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
     async def list_eager(
-        self, skip: int = 0, limit: int = 100
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        identity_id: Optional[Any] = None,
+        project_id: Optional[Any] = None,
     ) -> List[IdentityProjectPermission]:
-        stmt = (
-            select(IdentityProjectPermission)
-            .options(
-                selectinload(IdentityProjectPermission.identity),
-                selectinload(IdentityProjectPermission.project),
-            )
-            .offset(skip)
-            .limit(limit)
+        from app.models.project import Project
+
+        stmt = select(IdentityProjectPermission).options(
+            selectinload(IdentityProjectPermission.identity),
+            selectinload(IdentityProjectPermission.project),
         )
+        if organization_id:
+            if isinstance(organization_id, str):
+                organization_id = uuid.UUID(organization_id)
+            stmt = stmt.join(IdentityProjectPermission.project).where(
+                Project.organization_id == organization_id
+            )
+        if identity_id:
+            if isinstance(identity_id, str):
+                identity_id = uuid.UUID(identity_id)
+            stmt = stmt.where(IdentityProjectPermission.identity_id == identity_id)
+        if project_id:
+            if isinstance(project_id, str):
+                project_id = uuid.UUID(project_id)
+            stmt = stmt.where(IdentityProjectPermission.project_id == project_id)
+
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 

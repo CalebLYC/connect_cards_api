@@ -36,8 +36,22 @@ class WebhookRepository:
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def list(self, skip: int = 0, limit: int = 100) -> List[Webhook]:
-        stmt = select(Webhook).offset(skip).limit(limit)
+    async def list(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        is_active: Optional[bool] = None,
+    ) -> List[Webhook]:
+        stmt = select(Webhook)
+        if organization_id:
+            if isinstance(organization_id, str):
+                organization_id = uuid.UUID(organization_id)
+            stmt = stmt.where(Webhook.organization_id == organization_id)
+        if is_active is not None:
+            stmt = stmt.where(Webhook.is_active == is_active)
+
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 

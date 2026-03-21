@@ -82,23 +82,52 @@ class CardRepository:
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def list(self, skip: int = 0, limit: int = 100) -> List[Card]:
-        stmt = select(Card).offset(skip).limit(limit)
+    async def list(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        issuer_organization_id: Optional[Any] = None,
+        card_type: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[Card]:
+        stmt = select(Card)
+        if issuer_organization_id:
+            if isinstance(issuer_organization_id, str):
+                issuer_organization_id = uuid.UUID(issuer_organization_id)
+            stmt = stmt.where(Card.issuer_organization_id == issuer_organization_id)
+        if card_type:
+            stmt = stmt.where(Card.card_type == card_type)
+        if status:
+            stmt = stmt.where(Card.status == status)
+
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def list_eager(self, skip: int = 0, limit: int = 100) -> List[Card]:
-        stmt = (
-            select(Card)
-            .options(
-                selectinload(Card.identity),
-                selectinload(Card.issuer_organization),
-                # selectinload(Card.assignment_history),
-                # selectinload(Card.events),
-            )
-            .offset(skip)
-            .limit(limit)
+    async def list_eager(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        issuer_organization_id: Optional[Any] = None,
+        card_type: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[Card]:
+        stmt = select(Card).options(
+            selectinload(Card.identity),
+            selectinload(Card.issuer_organization),
+            # selectinload(Card.assignment_history),
+            # selectinload(Card.events),
         )
+        if issuer_organization_id:
+            if isinstance(issuer_organization_id, str):
+                issuer_organization_id = uuid.UUID(issuer_organization_id)
+            stmt = stmt.where(Card.issuer_organization_id == issuer_organization_id)
+        if card_type:
+            stmt = stmt.where(Card.card_type == card_type)
+        if status:
+            stmt = stmt.where(Card.status == status)
+
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 

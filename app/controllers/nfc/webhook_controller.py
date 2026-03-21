@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, status, Query, Path
 
 from app.providers.auth_provider import require_permission, require_role
@@ -33,14 +33,18 @@ async def create_webhook(
 @router.get(
     "/",
     response_model=List[WebhookReadSchema],
-    dependencies=[require_role("admin")],
+    dependencies=[require_permission("webhook:read", verify_org=True)],
 )
 async def list_webhooks(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
+    organization_id: Optional[str] = Query(None),
+    is_active: Optional[bool] = Query(None),
     service: WebhookService = Depends(get_webhook_service),
 ):
-    return await service.list_webhooks(skip=skip, limit=limit)
+    return await service.list_webhooks(
+        skip=skip, limit=limit, organization_id=organization_id, is_active=is_active
+    )
 
 
 @router.get(

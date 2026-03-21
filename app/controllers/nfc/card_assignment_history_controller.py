@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status, Query, Path
-from typing import List
+from typing import List, Optional
 
 from app.providers.auth_provider import require_permission, require_role
 from app.providers.service_providers import get_card_assignment_history_service
@@ -26,24 +26,32 @@ router = APIRouter(
     "/",
     response_model=List[CardAssignmentHistoryReadSchema],
     summary="List histories",
-    dependencies=[require_role("admin")],
+    dependencies=[require_permission("card_assignment_history:read", verify_org=True)],
 )
 async def list_histories(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    organization_id: Optional[str] = Query(None),
+    card_id: Optional[str] = Query(None),
     eager: bool = Query(True),
     service: CardAssignmentHistoryService = Depends(
         get_card_assignment_history_service
     ),
 ):
-    return await service.list_histories(skip=skip, limit=limit, eager=eager)
+    return await service.list_histories(
+        skip=skip,
+        limit=limit,
+        organization_id=organization_id,
+        card_id=card_id,
+        eager=eager,
+    )
 
 
 @router.get(
     "/{id}",
     response_model=CardAssignmentHistoryReadSchema,
     summary="Get history by ID",
-    dependencies=[require_role("admin")],
+    dependencies=[require_permission("card_assignment_history:read", verify_org=True)],
 )
 async def get_history(
     id: str = Path(..., min_length=24, max_length=36),

@@ -122,17 +122,21 @@ class IdentityProjectPermissionService:
 
     async def list_permissions(
         self,
-        filters: Dict[str, Any] = None,
         skip: int = 0,
         limit: int = 100,
+        organization_id: Optional[Any] = None,
+        identity_id: Optional[Any] = None,
+        project_id: Optional[Any] = None,
         eager: bool = False,
     ) -> List[IdentityProjectPermissionReadSchema]:
         if eager:
-            permissions = await self.permission_repos.find_many_eager(
-                filters, skip, limit
+            permissions = await self.permission_repos.list_eager(
+                skip, limit, organization_id, identity_id, project_id
             )
         else:
-            permissions = await self.permission_repos.find_many(filters, skip, limit)
+            permissions = await self.permission_repos.list(
+                skip, limit, organization_id, identity_id, project_id
+            )
         return [
             IdentityProjectPermissionReadSchema.model_validate(p) for p in permissions
         ]

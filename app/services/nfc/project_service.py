@@ -32,15 +32,18 @@ class ProjectService:
 
     async def list_projects(
         self,
-        filters: Dict[str, Any] = None,
         skip: int = 0,
         limit: int = 100,
+        organization_id: Optional[Any] = None,
+        name: Optional[str] = None,
         eager: bool = False,
     ) -> List[ProjectReadSchema]:
         if eager:
-            projects = await self.project_repos.find_many_eager(filters, skip, limit)
+            projects = await self.project_repos.list_eager(
+                skip, limit, organization_id, name
+            )
         else:
-            projects = await self.project_repos.find_many(filters, skip, limit)
+            projects = await self.project_repos.list(skip, limit, organization_id, name)
         return [ProjectReadSchema.model_validate(p) for p in projects]
 
     async def create_project(

@@ -1,16 +1,26 @@
 from fastapi import APIRouter, Depends, Query, Path, status
-from typing import List
+from typing import List, Optional
+
 from app.models.user import User
-from app.providers.auth_provider import auth_middleware, require_permission
+from app.providers.auth_provider import (
+    auth_middleware,
+    require_permission,
+    require_role,
+)
 from app.providers.service_providers import get_user_service
-from app.schemas.user_schema import LazyUserReadSchema, UserCreateSchema, UserUpdateSchema, UserReadSchema
+from app.schemas.user_schema import (
+    LazyUserReadSchema,
+    UserCreateSchema,
+    UserUpdateSchema,
+    UserReadSchema,
+)
 from app.services.auth.user_service import UserService
 from app.utils.constants import http_status
 
 router = APIRouter(
     prefix="/users",
     tags=["Users"],
-    dependencies=[require_permission("user:manage")],
+    dependencies=[require_role("admin")],
     responses=http_status.router_responses,
 )
 
@@ -19,10 +29,14 @@ router = APIRouter(
     "/",
     response_model=List[UserReadSchema],
     summary="List users",
+    # dependencies=[require_permission("user:read", verify_org=True)],
 )
 async def list_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    organization_id: Optional[str] = Query(None),
+    is_active: Optional[bool] = Query(None),
+    role_name: Optional[str] = Query(None),
     all: bool = Query(default=False),
     service: UserService = Depends(get_user_service),
 ):
@@ -31,13 +45,23 @@ async def list_users(
     Args:
         skip (int, optional): Number of users to skip. Defaults to Query(0, ge=0).
         limit (int, optional): Maximum number of users to return. Defaults to Query(100, ge=1, le=1000).
+        organization_id (Optional[str]): Filter by organization id.
+        is_active (Optional[bool]): Filter by active status.
+        role_name (Optional[str]): Filter by role name.
         all (bool, optional): If True, return all users without pagination. Defaults to Query(default=False).
         service (UserService, optional): User service dependency.
 
     Returns:
         List[UserReadSchema]: A list of users, either paginated or all users if `all` is True.
     """
-    return await service.list_users(skip=skip, limit=limit, all=all)
+    return await service.list_users(
+        skip=skip,
+        limit=limit,
+        organization_id=organization_id,
+        is_active=is_active,
+        role_name=role_name,
+        all=all,
+    )
 
 
 @router.get(
@@ -101,7 +125,9 @@ async def create_user(
     return await service.create_user(user_create)
 
 
-@router.put("/{user_id}", response_model=LazyUserReadSchema, summary="Update a user by ID")
+@router.put(
+    "/{user_id}", response_model=LazyUserReadSchema, summary="Update a user by ID"
+)
 async def update_user(
     user_id: str = Path(..., min_length=24, max_length=36),
     user_update: UserUpdateSchema = ...,

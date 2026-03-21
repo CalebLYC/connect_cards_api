@@ -62,21 +62,56 @@ class CardAssignmentHistoryRepository:
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def list(self, skip: int = 0, limit: int = 100) -> List[CardAssignmentHistory]:
-        stmt = select(CardAssignmentHistory).offset(skip).limit(limit)
+    async def list(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        card_id: Optional[Any] = None,
+    ) -> List[CardAssignmentHistory]:
+        from app.models.card import Card
+
+        stmt = select(CardAssignmentHistory)
+        if organization_id:
+            if isinstance(organization_id, str):
+                organization_id = uuid.UUID(organization_id)
+            stmt = stmt.join(CardAssignmentHistory.card).where(
+                Card.issuer_organization_id == organization_id
+            )
+        if card_id:
+            if isinstance(card_id, str):
+                card_id = uuid.UUID(card_id)
+            stmt = stmt.where(CardAssignmentHistory.card_id == card_id)
+
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def list_eager(self, skip: int = 0, limit: int = 100) -> List[CardAssignmentHistory]:
-        stmt = (
-            select(CardAssignmentHistory)
-            .options(
-                selectinload(CardAssignmentHistory.card),
-                selectinload(CardAssignmentHistory.identity),
-            )
-            .offset(skip)
-            .limit(limit)
+    async def list_eager(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        card_id: Optional[Any] = None,
+    ) -> List[CardAssignmentHistory]:
+        from app.models.card import Card
+
+        stmt = select(CardAssignmentHistory).options(
+            selectinload(CardAssignmentHistory.card),
+            selectinload(CardAssignmentHistory.identity),
         )
+        if organization_id:
+            if isinstance(organization_id, str):
+                organization_id = uuid.UUID(organization_id)
+            stmt = stmt.join(CardAssignmentHistory.card).where(
+                Card.issuer_organization_id == organization_id
+            )
+        if card_id:
+            if isinstance(card_id, str):
+                card_id = uuid.UUID(card_id)
+            stmt = stmt.where(CardAssignmentHistory.card_id == card_id)
+
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 

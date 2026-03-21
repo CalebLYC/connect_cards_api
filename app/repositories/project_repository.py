@@ -66,23 +66,48 @@ class ProjectRepository:
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def list(self, skip: int = 0, limit: int = 100) -> List[Project]:
-        stmt = select(Project).offset(skip).limit(limit)
+    async def list(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        name: Optional[str] = None,
+    ) -> List[Project]:
+        stmt = select(Project)
+        if organization_id:
+            if isinstance(organization_id, str):
+                organization_id = uuid.UUID(organization_id)
+            stmt = stmt.where(Project.organization_id == organization_id)
+        if name:
+            stmt = stmt.where(Project.name.ilike(f"%{name}%"))
+
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def list_eager(self, skip: int = 0, limit: int = 100) -> List[Project]:
+    async def list_eager(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        name: Optional[str] = None,
+    ) -> List[Project]:
         stmt = (
-            select(Project)
-            .options(
+            select(Project).options(
                 selectinload(Project.organization),
                 selectinload(Project.permissions),
                 # selectinload(Project.events),
                 selectinload(Project.readers),
             )
-            .offset(skip)
-            .limit(limit)
         )
+        if organization_id:
+            if isinstance(organization_id, str):
+                organization_id = uuid.UUID(organization_id)
+            stmt = stmt.where(Project.organization_id == organization_id)
+        if name:
+            stmt = stmt.where(Project.name.ilike(f"%{name}%"))
+
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 

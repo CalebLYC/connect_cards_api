@@ -4,7 +4,12 @@ from app.repositories.permission_repository import PermissionRepository
 from app.repositories.role_repository import RoleRepository
 from app.repositories.user_repository import UserRepository
 from app.models.user import User
-from app.schemas.user_schema import LazyUserReadSchema, UserCreateSchema, UserUpdateSchema, UserReadSchema
+from app.schemas.user_schema import (
+    LazyUserReadSchema,
+    UserCreateSchema,
+    UserUpdateSchema,
+    UserReadSchema,
+)
 from fastapi import HTTPException, status
 
 
@@ -18,7 +23,6 @@ class UserService:
         self.user_repos = user_repos
         self.role_repos = role_repos
         self.permission_repos = permission_repos
-
 
     async def get_user(self, user_id: str) -> Optional[UserReadSchema]:
         """Retrieve a user by its ID.
@@ -59,18 +63,34 @@ class UserService:
         return UserReadSchema.model_validate(user)
 
     async def list_users(
-        self, skip: int = 0, limit: int = 100, all: bool = False
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        is_active: Optional[bool] = None,
+        role_name: Optional[str] = None,
+        all: bool = False,
     ) -> List[UserReadSchema]:
         """List users with pagination.
 
         Args:
             skip (int, optional): Number of users to skip. Defaults to 0.
             limit (int, optional): Maximum number of users to return. Defaults to 100.
+            organization_id (Optional[Any]): Filter by organization id.
+            is_active (Optional[bool]): Filter by active status.
+            role_name (Optional[str]): Filter by role name.
             all (bool, optional): If True, return all users without pagination. Defaults to False.
         Returns:
             List[UserReadSchema]: A list of user data schemas.
         """
-        users = await self.user_repos.list_users(skip=skip, limit=limit, all=all)
+        users = await self.user_repos.list_users(
+            skip=skip,
+            limit=limit,
+            organization_id=organization_id,
+            is_active=is_active,
+            role_name=role_name,
+            all=all,
+        )
         return [UserReadSchema.model_validate(u) for u in users]
 
     async def create_user(self, user_create: UserCreateSchema) -> LazyUserReadSchema:
@@ -127,12 +147,11 @@ class UserService:
             update_data["password"] = SecurityUtils.hash_password(
                 update_data.pop("password")
             )
-            
+
         for key, value in update_data.items():
             setattr(user, key, value)
         updated = await self.user_repos.update(user)
         return UserReadSchema.model_validate(updated)
-
 
     async def verify_user(self, user_id: str) -> UserReadSchema:
         """Verify a user's account.
@@ -172,8 +191,7 @@ class UserService:
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         await self.user_repos.delete(user)
-        
-        
+
     async def add_roles_to_user(
         self, role_id: str, roles_to_add: List[str]
     ) -> UserReadSchema:
@@ -197,11 +215,13 @@ class UserService:
 
         # Valider si toutes les rôles à ajouter existent
         existing_roles = await self.role_repos.find_many_by_ids(ids=roles_to_add)
-        #print(f"Existing roles: {list(existing_roles)}")
+        # print(f"Existing roles: {list(existing_roles)}")
         existing_role_ids = {str(r.id) for r in existing_roles}
-        #print(f"Existing role ids: {list(existing_role_ids)}")
-        
-        invalid_roles = [role_id for role_id in roles_to_add if role_id not in existing_role_ids]
+        # print(f"Existing role ids: {list(existing_role_ids)}")
+
+        invalid_roles = [
+            role_id for role_id in roles_to_add if role_id not in existing_role_ids
+        ]
         if invalid_roles:
             raise HTTPException(
                 status_code=400,
@@ -220,8 +240,7 @@ class UserService:
         user = await self.user_repos.find_by_id(id=role_id)
         # Retourner l'utilisateur mis à jour
         return UserReadSchema.model_validate(user)
-    
-    
+
     async def remove_roles_from_user(
         self, user_id: str, roles_to_remove: List[str]
     ) -> UserReadSchema:
@@ -242,7 +261,7 @@ class UserService:
         user = await self.user_repos.find_by_id(id=user_id)
         if not user:
             raise HTTPException(status_code=404, detail=f"User '{user_id}' not found.")
-        
+
         # Retirer les rôles de la relation
         user_role_ids = {str(r.id) for r in user.roles}
         for role_id in roles_to_remove:
@@ -256,7 +275,6 @@ class UserService:
 
         # Retourner l'utilisateur mis à jour
         return UserReadSchema.model_validate(user)
-
 
     async def add_permissions_to_user(
         self, role_id: str, permissions_to_add: List[str]
@@ -280,12 +298,18 @@ class UserService:
             raise HTTPException(status_code=404, detail=f"User '{role_id}' not found.")
 
         # Valider si toutes les permissions à ajouter existent
-        existing_permissions = await self.permission_repos.find_many_by_ids(ids=permissions_to_add)
-        #print(f"Existing permissions: {list(existing_permissions)}")
+        existing_permissions = await self.permission_repos.find_many_by_ids(
+            ids=permissions_to_add
+        )
+        # print(f"Existing permissions: {list(existing_permissions)}")
         existing_permission_ids = {str(p.id) for p in existing_permissions}
-        #print(f"Existing permission ids: {list(existing_permission_ids)}")
-        
-        invalid_permissions = [perm_id for perm_id in permissions_to_add if perm_id not in existing_permission_ids]
+        # print(f"Existing permission ids: {list(existing_permission_ids)}")
+
+        invalid_permissions = [
+            perm_id
+            for perm_id in permissions_to_add
+            if perm_id not in existing_permission_ids
+        ]
         if invalid_permissions:
             raise HTTPException(
                 status_code=400,
@@ -300,11 +324,12 @@ class UserService:
         # Mettre à jour l'utilisateur dans la base de données
         updated = await self.user_repos.update(user)
         if not updated:
-            raise HTTPException(status_code=500, detail="Failed to update user permissions.")
+            raise HTTPException(
+                status_code=500, detail="Failed to update user permissions."
+            )
 
         # Retourner l'utilisateur mis à jour
         return UserReadSchema.model_validate(user)
-
 
     async def remove_permissions_from_user(
         self, user_id: str, permissions_to_remove: List[str]
@@ -326,21 +351,24 @@ class UserService:
         user = await self.user_repos.find_by_id(id=user_id)
         if not user:
             raise HTTPException(status_code=404, detail=f"User '{user_id}' not found.")
-        
+
         # Retirer les permissions de la relation
         user_permission_ids = {str(p.id) for p in user.permissions}
         for permission_id in permissions_to_remove:
             if permission_id in user_permission_ids:
-                user.permissions.remove(next(p for p in user.permissions if str(p.id) == permission_id))
+                user.permissions.remove(
+                    next(p for p in user.permissions if str(p.id) == permission_id)
+                )
 
         # Mettre à jour l'utilisateur dans la base de données
         updated = await self.user_repos.update(user)
         if not updated:
-            raise HTTPException(status_code=500, detail="Failed to update user permissions.")
+            raise HTTPException(
+                status_code=500, detail="Failed to update user permissions."
+            )
 
         # Retourner l'utilisateur mis à jour
         return UserReadSchema.model_validate(user)
-
 
     """async def get_all_roles(self, user: User) -> set[str]:
         # 1. Roles directes
@@ -369,7 +397,6 @@ class UserService:
     async def has_role(self, user: User, role_name: str) -> bool:
         return role_name in user.roles"""
 
-
     async def ensure_role(self, user: User, role_name: str) -> bool:
         db_role = await self.role_repos.find_by_name(name=role_name)
         if not db_role:
@@ -377,8 +404,7 @@ class UserService:
         if not user.has_role(role_name):
             raise HTTPException(status_code=403, detail="Unauthorized")
         return True
-    
-    
+
     """async def get_all_permissions(self, user: User) -> set[str]:
         # 1. Permissions directes
         perms = set(user.permissions)
@@ -407,9 +433,7 @@ class UserService:
         all_permissions = await self.get_all_permissions(user)
         return permission_code in all_permissions"""
 
-    async def ensure_permission(
-        self, user: User, permission_code: str
-    ) -> bool:
+    async def ensure_permission(self, user: User, permission_code: str) -> bool:
         db_permission = await self.permission_repos.find_by_code(code=permission_code)
         if not db_permission:
             raise HTTPException(status_code=500, detail="Unkown permission")

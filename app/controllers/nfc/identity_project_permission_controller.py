@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status, Query, BackgroundTasks, Path
-from typing import List
+from typing import List, Optional
 import uuid
 
 from app.providers.service_providers import get_identity_project_permission_service
@@ -28,17 +28,27 @@ router = APIRouter(
     "/",
     response_model=List[IdentityProjectPermissionReadSchema],
     summary="List permissions",
-    dependencies=[require_role("admin")],
+    dependencies=[require_permission("project:permission:read", verify_org=True)],
 )
 async def list_permissions(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    organization_id: Optional[str] = Query(None),
+    identity_id: Optional[str] = Query(None),
+    project_id: Optional[str] = Query(None),
     eager: bool = Query(True),
     service: IdentityProjectPermissionService = Depends(
         get_identity_project_permission_service
     ),
 ):
-    return await service.list_permissions(skip=skip, limit=limit, eager=eager)
+    return await service.list_permissions(
+        skip=skip,
+        limit=limit,
+        organization_id=organization_id,
+        identity_id=identity_id,
+        project_id=project_id,
+        eager=eager,
+    )
 
 
 @router.get(

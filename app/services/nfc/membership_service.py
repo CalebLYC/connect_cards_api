@@ -82,17 +82,21 @@ class MembershipService:
 
     async def list_memberships(
         self,
-        filters: Dict[str, Any] = None,
         skip: int = 0,
         limit: int = 100,
+        organization_id: Optional[Any] = None,
+        identity_id: Optional[Any] = None,
+        status: Optional[str] = None,
         eager: bool = False,
     ) -> List[MembershipReadSchema]:
         if eager:
-            memberships = await self.membership_repos.find_many_eager(
-                filters, skip, limit
+            memberships = await self.membership_repos.list_eager(
+                skip, limit, organization_id, identity_id, status
             )
         else:
-            memberships = await self.membership_repos.find_many(filters, skip, limit)
+            memberships = await self.membership_repos.list(
+                skip, limit, organization_id, identity_id, status
+            )
         return [MembershipReadSchema.model_validate(m) for m in memberships]
 
     async def create_membership(

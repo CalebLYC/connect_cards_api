@@ -57,7 +57,10 @@ class UserRepository:
     async def list_users(
         self,
         skip: int = 0,
-        limit: Optional[int] = 100,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        is_active: Optional[bool] = None,
+        role_name: Optional[str] = None,
         all: bool = False,
     ) -> List[User]:
         stmt = (
@@ -66,6 +69,19 @@ class UserRepository:
             .options(selectinload(User.permissions))
             .options(selectinload(User.organization))
         )
+
+        if organization_id:
+            import uuid
+
+            if isinstance(organization_id, str):
+                organization_id = uuid.UUID(organization_id)
+            stmt = stmt.where(User.organization_id == organization_id)
+
+        if is_active is not None:
+            stmt = stmt.where(User.is_active == is_active)
+
+        if role_name:
+            stmt = stmt.join(User.roles).where(Role.name == role_name)
 
         if not all:
             stmt = stmt.offset(skip).limit(limit)

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status, Query, Path
-from typing import List
+from typing import List, Optional
 
 from app.providers.auth_provider import require_permission, require_role
 from app.providers.service_providers import get_project_service
@@ -24,15 +24,19 @@ router = APIRouter(
     "/",
     response_model=List[ProjectReadSchema],
     summary="List projects",
-    dependencies=[require_role("admin")],
+    dependencies=[require_permission("project:read", verify_org=True)],
 )
 async def list_projects(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    organization_id: Optional[str] = Query(None),
+    name: Optional[str] = Query(None),
     eager: bool = Query(True),
     service: ProjectService = Depends(get_project_service),
 ):
-    return await service.list_projects(skip=skip, limit=limit, eager=eager)
+    return await service.list_projects(
+        skip=skip, limit=limit, organization_id=organization_id, name=name, eager=eager
+    )
 
 
 @router.get(

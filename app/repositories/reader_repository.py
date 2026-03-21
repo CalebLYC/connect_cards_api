@@ -66,22 +66,61 @@ class ReaderRepository:
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def list(self, skip: int = 0, limit: int = 100) -> List[Reader]:
-        stmt = select(Reader).offset(skip).limit(limit)
+    async def list(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        project_id: Optional[Any] = None,
+        name: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[Reader]:
+        stmt = select(Reader)
+        if organization_id:
+            if isinstance(organization_id, str):
+                organization_id = uuid.UUID(organization_id)
+            stmt = stmt.where(Reader.organization_id == organization_id)
+        if project_id:
+            if isinstance(project_id, str):
+                project_id = uuid.UUID(project_id)
+            stmt = stmt.where(Reader.project_id == project_id)
+        if name:
+            stmt = stmt.where(Reader.name.ilike(f"%{name}%"))
+        if status:
+            stmt = stmt.where(Reader.status == status)
+
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def list_eager(self, skip: int = 0, limit: int = 100) -> List[Reader]:
-        stmt = (
-            select(Reader)
-            .options(
-                selectinload(Reader.organization),
-                selectinload(Reader.project),
-                # selectinload(Reader.events),
-            )
-            .offset(skip)
-            .limit(limit)
+    async def list_eager(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        project_id: Optional[Any] = None,
+        name: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[Reader]:
+        stmt = select(Reader).options(
+            selectinload(Reader.organization),
+            selectinload(Reader.project),
+            # selectinload(Reader.events),
         )
+        if organization_id:
+            if isinstance(organization_id, str):
+                organization_id = uuid.UUID(organization_id)
+            stmt = stmt.where(Reader.organization_id == organization_id)
+        if project_id:
+            if isinstance(project_id, str):
+                project_id = uuid.UUID(project_id)
+            stmt = stmt.where(Reader.project_id == project_id)
+        if name:
+            stmt = stmt.where(Reader.name.ilike(f"%{name}%"))
+        if status:
+            stmt = stmt.where(Reader.status == status)
+
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 

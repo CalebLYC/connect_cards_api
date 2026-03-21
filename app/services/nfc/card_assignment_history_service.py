@@ -34,15 +34,20 @@ class CardAssignmentHistoryService:
 
     async def list_histories(
         self,
-        filters: Dict[str, Any] = None,
         skip: int = 0,
         limit: int = 100,
+        organization_id: Optional[Any] = None,
+        card_id: Optional[Any] = None,
         eager: bool = False,
     ) -> List[CardAssignmentHistoryReadSchema]:
         if eager:
-            histories = await self.history_repos.find_many_eager(filters, skip, limit)
+            histories = await self.history_repos.list_eager(
+                skip, limit, organization_id, card_id
+            )
         else:
-            histories = await self.history_repos.find_many(filters, skip, limit)
+            histories = await self.history_repos.list(
+                skip, limit, organization_id, card_id
+            )
         return [CardAssignmentHistoryReadSchema.model_validate(h) for h in histories]
 
     async def create_history(

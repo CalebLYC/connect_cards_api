@@ -61,22 +61,63 @@ class EventRepository:
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def list(self, skip: int = 0, limit: int = 100) -> List[Event]:
-        stmt = select(Event).offset(skip).limit(limit)
+    async def list(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        project_id: Optional[Any] = None,
+        event_type: Optional[str] = None,
+    ) -> List[Event]:
+        from app.models.project import Project
+
+        stmt = select(Event)
+        if organization_id:
+            if isinstance(organization_id, str):
+                organization_id = uuid.UUID(organization_id)
+            stmt = stmt.join(Event.project).where(
+                Project.organization_id == organization_id
+            )
+        if project_id:
+            if isinstance(project_id, str):
+                project_id = uuid.UUID(project_id)
+            stmt = stmt.where(Event.project_id == project_id)
+        if event_type:
+            stmt = stmt.where(Event.event_type == event_type)
+
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def list_eager(self, skip: int = 0, limit: int = 100) -> List[Event]:
-        stmt = (
-            select(Event)
-            .options(
-                selectinload(Event.card),
-                selectinload(Event.reader),
-                selectinload(Event.project),
-            )
-            .offset(skip)
-            .limit(limit)
+    async def list_eager(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        organization_id: Optional[Any] = None,
+        project_id: Optional[Any] = None,
+        event_type: Optional[str] = None,
+    ) -> List[Event]:
+        from app.models.project import Project
+
+        stmt = select(Event).options(
+            selectinload(Event.card),
+            selectinload(Event.reader),
+            selectinload(Event.project),
         )
+        if organization_id:
+            if isinstance(organization_id, str):
+                organization_id = uuid.UUID(organization_id)
+            stmt = stmt.join(Event.project).where(
+                Project.organization_id == organization_id
+            )
+        if project_id:
+            if isinstance(project_id, str):
+                project_id = uuid.UUID(project_id)
+            stmt = stmt.where(Event.project_id == project_id)
+        if event_type:
+            stmt = stmt.where(Event.event_type == event_type)
+
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
