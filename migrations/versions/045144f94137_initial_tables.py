@@ -1,8 +1,8 @@
 """Initial tables
 
-Revision ID: 9cf79ade1eba
+Revision ID: 045144f94137
 Revises: 
-Create Date: 2026-03-16 21:07:08.355393
+Create Date: 2026-03-21 22:05:09.994515
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '9cf79ade1eba'
+revision: str = '045144f94137'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,22 +25,32 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('email', sa.String(), nullable=False),
+    sa.Column('sex', sa.Enum('MALE', 'FEMALE', name='sexenum'), nullable=True),
+    sa.Column('phone', sa.String(), nullable=True),
+    sa.Column('address', sa.String(), nullable=True),
+    sa.Column('date_of_birth', sa.DateTime(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
     )
     op.create_table('organizations',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
+    sa.Column('identification_number', sa.String(), nullable=False),
+    sa.Column('url', sa.String(), nullable=True),
     sa.Column('type', sa.Enum('COMPANY', 'NON_PROFIT', 'GOVERNMENT', 'OTHER', name='organizationtypeenum'), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name', 'identification_number', name='uq_organization_name_identification_number')
     )
     op.create_table('permissions',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('code', sa.String(length=50), nullable=False),
     sa.Column('description', sa.String(length=255), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('code'),
     sa.UniqueConstraint('id')
@@ -50,6 +60,7 @@ def upgrade() -> None:
     sa.Column('name', sa.String(length=50), nullable=False),
     sa.Column('description', sa.String(length=255), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('id'),
     sa.UniqueConstraint('name')
@@ -62,6 +73,7 @@ def upgrade() -> None:
     sa.Column('activation_code', sa.String(), nullable=True),
     sa.Column('issuer_organization_id', sa.UUID(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['identity_id'], ['identities.id'], ),
     sa.ForeignKeyConstraint(['issuer_organization_id'], ['organizations.id'], ),
     sa.PrimaryKeyConstraint('id'),
@@ -77,9 +89,11 @@ def upgrade() -> None:
     sa.Column('roles', sa.ARRAY(sa.String()), nullable=True),
     sa.Column('status', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['identity_id'], ['identities.id'], ),
     sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('identity_id', 'organization_id', name='uq_membership_identity_org')
     )
     op.create_index('idx_memberships_identity_id', 'memberships', ['identity_id'], unique=False)
     op.create_index('idx_memberships_organization_id', 'memberships', ['organization_id'], unique=False)
@@ -89,8 +103,10 @@ def upgrade() -> None:
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('description', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name', 'organization_id', name='uq_project_name_org_id')
     )
     op.create_index('idx_projects_organization_id', 'projects', ['organization_id'], unique=False)
     op.create_table('role_permissions',
@@ -113,6 +129,7 @@ def upgrade() -> None:
     sa.Column('locale', sa.String(length=20), nullable=True),
     sa.Column('birthday_date', sa.DateTime(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.Column('organization_id', sa.UUID(), nullable=True),
     sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ),
     sa.PrimaryKeyConstraint('id'),
@@ -127,6 +144,7 @@ def upgrade() -> None:
     sa.Column('expires_at', sa.DateTime(), nullable=True),
     sa.Column('revoked', sa.Boolean(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('id'),
@@ -140,6 +158,7 @@ def upgrade() -> None:
     sa.Column('identity_id', sa.UUID(), nullable=True),
     sa.Column('assigned_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.Column('unassigned_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['card_id'], ['cards.id'], ),
     sa.ForeignKeyConstraint(['identity_id'], ['identities.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -148,14 +167,18 @@ def upgrade() -> None:
     op.create_index('idx_card_assignment_history_card_id', 'card_assignment_history', ['card_id'], unique=False)
     op.create_index('idx_card_assignment_history_identity_id', 'card_assignment_history', ['identity_id'], unique=False)
     op.create_index('idx_card_assignment_history_unassigned_at', 'card_assignment_history', ['unassigned_at'], unique=False)
+    op.create_index('uq_active_card_assignment', 'card_assignment_history', ['card_id'], unique=True, postgresql_where=sa.text('unassigned_at IS NULL'))
     op.create_table('identity_project_permissions',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('identity_id', sa.UUID(), nullable=True),
     sa.Column('project_id', sa.UUID(), nullable=True),
     sa.Column('allowed', sa.Boolean(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['identity_id'], ['identities.id'], ),
     sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('identity_id', 'project_id', name='uq_identity_project_permission')
     )
     op.create_index('idx_identity_project_permissions_identity_id', 'identity_project_permissions', ['identity_id'], unique=False)
     op.create_index('idx_identity_project_permissions_project_id', 'identity_project_permissions', ['project_id'], unique=False)
@@ -166,9 +189,12 @@ def upgrade() -> None:
     sa.Column('name', sa.String(), nullable=True),
     sa.Column('location', sa.String(), nullable=True),
     sa.Column('status', sa.String(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ),
     sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name', 'organization_id', name='uq_reader_name_org_id')
     )
     op.create_index('idx_readers_organization_id', 'readers', ['organization_id'], unique=False)
     op.create_index('idx_readers_project_id', 'readers', ['project_id'], unique=False)
@@ -186,13 +212,27 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('user_id', 'role_id')
     )
+    op.create_table('webhooks',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('url', sa.String(length=500), nullable=False),
+    sa.Column('event_type', sa.String(length=50), nullable=False),
+    sa.Column('organization_id', sa.UUID(), nullable=False),
+    sa.Column('project_id', sa.UUID(), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('secret', sa.String(length=100), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ),
+    sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
     op.create_table('events',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('card_id', sa.UUID(), nullable=True),
     sa.Column('reader_id', sa.UUID(), nullable=True),
     sa.Column('project_id', sa.UUID(), nullable=True),
-    sa.Column('result', sa.String(), nullable=True),
-    sa.Column('description', sa.String(), nullable=True),
+    sa.Column('event_type', sa.String(length=50), nullable=True),
+    sa.Column('metadata_desc', sa.JSON(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['card_id'], ['cards.id'], ),
     sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ),
@@ -214,6 +254,7 @@ def downgrade() -> None:
     op.drop_index('idx_events_created_at', table_name='events')
     op.drop_index('idx_events_card_id', table_name='events')
     op.drop_table('events')
+    op.drop_table('webhooks')
     op.drop_table('user_roles')
     op.drop_table('user_permissions')
     op.drop_index('idx_readers_project_id', table_name='readers')
@@ -222,6 +263,7 @@ def downgrade() -> None:
     op.drop_index('idx_identity_project_permissions_project_id', table_name='identity_project_permissions')
     op.drop_index('idx_identity_project_permissions_identity_id', table_name='identity_project_permissions')
     op.drop_table('identity_project_permissions')
+    op.drop_index('uq_active_card_assignment', table_name='card_assignment_history', postgresql_where=sa.text('unassigned_at IS NULL'))
     op.drop_index('idx_card_assignment_history_unassigned_at', table_name='card_assignment_history')
     op.drop_index('idx_card_assignment_history_identity_id', table_name='card_assignment_history')
     op.drop_index('idx_card_assignment_history_card_id', table_name='card_assignment_history')

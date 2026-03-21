@@ -1,5 +1,7 @@
 from typing import Optional, List, Dict, Any
 from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
+
 from app.models.organization import Organization
 from app.repositories.organization_repository import OrganizationRepository
 from app.schemas.organization_schema import (
@@ -50,9 +52,17 @@ class OrganizationService:
     async def create_organization(
         self, organization_create: OrganizationCreateSchema
     ) -> LazyOrganizationReadSchema:
-        organization_model = Organization(**organization_create.model_dump())
-        created = await self.organization_repos.create(organization_model)
-        return LazyOrganizationReadSchema.model_validate(created)
+        try:
+            organization_model = Organization(**organization_create.model_dump())
+            created = await self.organization_repos.create(organization_model)
+            return LazyOrganizationReadSchema.model_validate(created)
+        except IntegrityError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Organization already exists",
+            )
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     async def update_organization(
         self, organization_id: str, organization_update: OrganizationUpdateSchema

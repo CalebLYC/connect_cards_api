@@ -22,7 +22,7 @@ from app.utils.constants import http_status
 router = APIRouter(
     prefix="/identities",
     tags=["Identities"],
-    dependencies=[require_permission("identity:manage", verify_org=True)],
+    # dependencies=[require_permission("identity:manage", verify_org=True)],
     responses=http_status.router_responses,
 )
 
@@ -53,7 +53,10 @@ async def list_identities(
 
 
 @router.get(
-    "/{identity_id}", response_model=IdentityReadSchema, summary="Get identity by ID"
+    "/{identity_id}",
+    response_model=IdentityReadSchema,
+    summary="Get identity by ID",
+    dependencies=[require_permission("identity:manage", verify_org=True)],
 )
 async def get_identity(
     identity_id: str = Path(..., min_length=24, max_length=36),
@@ -68,6 +71,7 @@ async def get_identity(
     response_model=LazyIdentityReadSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Create identity",
+    dependencies=[require_permission("identity:manage", verify_org=False)],
 )
 async def create_identity(
     identity_create: IdentityCreateSchema,
@@ -80,7 +84,10 @@ async def create_identity(
 
 
 @router.put(
-    "/{identity_id}", response_model=LazyIdentityReadSchema, summary="Update identity"
+    "/{identity_id}",
+    response_model=LazyIdentityReadSchema,
+    summary="Update identity",
+    dependencies=[require_permission("identity:manage", verify_org=True)],
 )
 async def update_identity(
     identity_id: str = Path(..., min_length=24, max_length=36),
@@ -94,7 +101,10 @@ async def update_identity(
 
 
 @router.delete(
-    "/{identity_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete identity"
+    "/{identity_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete identity",
+    dependencies=[require_permission("identity:manage", verify_org=True)],
 )
 async def delete_identity(
     identity_id: str = Path(..., min_length=24, max_length=36),

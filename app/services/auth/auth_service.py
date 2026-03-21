@@ -23,9 +23,11 @@ class AuthService:
         self,
         access_token_repos: AccessTokenRepository,
         user_repos: UserRepository,
+        organization_repos: OrganizationRepository,
     ):
         self.access_token_repos = access_token_repos
         self.user_repos = user_repos
+        self.organization_repos = organization_repos
 
     async def generate_access_token(
         self, user_id: str, expires_in_minutes: int | None = None
@@ -58,7 +60,7 @@ class AuthService:
             expires_at=expires_at,
             revoked=False,
         )
-        db_token =await self.access_token_repos.create(access_token=token_doc)
+        db_token = await self.access_token_repos.create(access_token=token_doc)
         return db_token.id
 
     async def revoke_access_token(self, token: str) -> bool:
@@ -115,7 +117,9 @@ class AuthService:
         Returns:
             LoginResponseSchema: The login response containing the access token and user data.
         """
-        db_user = await self.user_repos.find_by_email_with_roles_and_permissions(email=user.email)
+        db_user = await self.user_repos.find_by_email_with_roles_and_permissions(
+            email=user.email
+        )
         if not db_user:
             raise HTTPException(status_code=404, detail="Wrong credentials")
         is_auth = SecurityUtils.verify_password(
@@ -146,6 +150,13 @@ class AuthService:
                 raise HTTPException(
                     status_code=400, detail="Password not match password confirmation"
                 )
+
+        if user.organization_id:
+            organization = await self.organization_repos.find_by_id(
+                user.organization_id
+            )
+            if not organization:
+                raise HTTPException(status_code=404, detail="Organization not found")
 
         existing = await self.user_repos.find_by_email(user.email)
         if existing:
@@ -208,6 +219,13 @@ class AuthService:
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         user_id = user.id
+
+        if user_update.organization_id:
+            organization = await self.organization_repos.find_by_id(
+                user_update.organization_id
+            )
+            if not organization:
+                raise HTTPException(status_code=404, detail="Organization not found")
 
         update_data = user_update.model_dump(exclude_unset=True)
         if "email" in update_data:
@@ -285,7 +303,7 @@ class AuthService:
         if logout:
             await self.logout(user_id=user_id)
 
-        #updated = await self.user_repos.find_by_id(user_id)
+        # updated = await self.user_repos.find_by_id(user_id)
         token_id = await self.generate_access_token(user_id=user_id)
         access_token = await self.access_token_repos.find_by_id(id=token_id)
         return_user = LazyUserReadSchema.model_validate(updated)

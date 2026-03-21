@@ -19,10 +19,12 @@ class UserService:
         user_repos: UserRepository,
         role_repos: Optional[RoleRepository] = None,
         permission_repos: Optional[PermissionRepository] = None,
+        organization_repos: Optional[OrganizationRepository] = None,
     ):
         self.user_repos = user_repos
         self.role_repos = role_repos
         self.permission_repos = permission_repos
+        self.organization_repos = organization_repos
 
     async def get_user(self, user_id: str) -> Optional[UserReadSchema]:
         """Retrieve a user by its ID.
@@ -109,6 +111,13 @@ class UserService:
         if existing:
             raise HTTPException(status_code=400, detail="Email already registered")
 
+        if user_create.organization_id:
+            organization = await self.organization_repos.find_by_id(
+                user_create.organization_id
+            )
+            if not organization:
+                raise HTTPException(status_code=404, detail="Organization not found")
+
         hashed_pw = SecurityUtils.hash_password(user_create.password)
         user_model = User(
             **user_create.model_dump(exclude=["password"]), password=hashed_pw
@@ -136,6 +145,13 @@ class UserService:
         user = await self.user_repos.find_by_id(user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
+
+        if user_update.organization_id:
+            organization = await self.organization_repos.find_by_id(
+                user_update.organization_id
+            )
+            if not organization:
+                raise HTTPException(status_code=404, detail="Organization not found")
 
         # Protection : Seul un superadmin peut modifier un superadmin
         if user.is_superuser():

@@ -1,4 +1,6 @@
 from typing import Optional, List
+from fastapi import HTTPException, status, BackgroundTasks
+
 from app.repositories.identity_repository import IdentityRepository
 from app.models.identity import Identity
 from app.schemas.identity_schema import (
@@ -7,8 +9,8 @@ from app.schemas.identity_schema import (
     IdentityReadSchema,
     LazyIdentityReadSchema,
 )
-from fastapi import HTTPException, status, BackgroundTasks
 from app.services.nfc.event_dispatcher import EventDispatcher
+from app.models.event import EventTypeEnum
 
 
 class IdentityService:

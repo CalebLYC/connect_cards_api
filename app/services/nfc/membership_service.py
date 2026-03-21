@@ -49,8 +49,6 @@ class MembershipService:
             )
             created_event = await self.event_repos.create(event)
 
-            created_event = await self.event_repos.create(event)
-
             # Trigger dispatch if dispatcher is available
             if self.event_dispatcher and background_tasks:
                 await self.event_dispatcher.dispatch_event(
@@ -58,12 +56,16 @@ class MembershipService:
                 )
             elif self.event_dispatcher:
                 import asyncio
-                await self.event_dispatcher.dispatch_event(created_event, background_tasks)
+
+                await self.event_dispatcher.dispatch_event(
+                    created_event, background_tasks
+                )
 
         if background_tasks:
             background_tasks.add_task(_save_and_trigger_event)
         else:
             import asyncio
+
             asyncio.create_task(_save_and_trigger_event())
 
     async def get_membership(
@@ -109,7 +111,7 @@ class MembershipService:
             created = await self.membership_repos.create(membership_model)
 
             # Log creation
-            self._log_event(
+            """self._log_event(
                 event_type=EventTypeEnum.MEMBERSHIP_CREATED,
                 identity_id=created.identity_id,
                 metadata_desc={
@@ -119,7 +121,7 @@ class MembershipService:
                     "status": created.status,
                 },
                 background_tasks=background_tasks,
-            )
+            )"""
 
             return LazyMembershipReadSchema.model_validate(created)
         except IntegrityError as e:

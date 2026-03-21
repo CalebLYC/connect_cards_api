@@ -147,7 +147,10 @@ async def delete_all_permissions(
     "/disallow",
     response_model=LazyIdentityProjectPermissionReadSchema,
     summary="Disallow identity from project",
-    dependencies=[require_permission("project:permission:manage", verify_org=True)],
+    # dependencies=[require_permission("project:permission:manage", verify_org=True)],
+    dependencies=[
+        require_permission("identity_project_permission:manage", verify_org=True)
+    ],
 )
 async def disallow_identity(
     identity_id: uuid.UUID = Query(...),
@@ -169,7 +172,10 @@ async def disallow_identity(
     "/allow",
     response_model=LazyIdentityProjectPermissionReadSchema,
     summary="Allow identity for project",
-    dependencies=[require_permission("project:permission:manage", verify_org=True)],
+    # dependencies=[require_permission("project:permission:manage", verify_org=True)],
+    dependencies=[
+        require_permission("identity_project_permission:manage", verify_org=True)
+    ],
 )
 async def allow_identity(
     identity_id: uuid.UUID = Query(...),

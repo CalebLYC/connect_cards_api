@@ -113,6 +113,8 @@ class SetupService:
             role = await self.role_repos.find_by_name(role_item["name"])
             if not role:
                 role = await self.role_repos.create(Role(**role_item))
+                role.permissions = []
+            # db_roles[role_item["name"]] = await self.role_repos.get_by_id(role.id)
             db_roles[role_item["name"]] = role
 
         # Define resources and actions for permissions

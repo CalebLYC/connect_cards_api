@@ -89,6 +89,8 @@ async def _verify_organization_access(
             body = await request.json()
             if isinstance(body, dict):
                 explicit_org_id = body.get("organization_id")
+                if not explicit_org_id:
+                    explicit_org_id = body.get("issuer_organization_id")
         except Exception:
             pass
 

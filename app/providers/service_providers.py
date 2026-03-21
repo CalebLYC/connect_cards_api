@@ -67,9 +67,13 @@ def get_user_service(
     user_repos: UserRepository = Depends(get_user_repository),
     role_repos: RoleRepository = Depends(get_role_repository),
     permission_repos: PermissionRepository = Depends(get_permission_repository),
+    organization_repos: OrganizationRepository = Depends(get_organization_repository),
 ) -> UserService:
     return UserService(
-        user_repos=user_repos, role_repos=role_repos, permission_repos=permission_repos
+        user_repos=user_repos,
+        role_repos=role_repos,
+        permission_repos=permission_repos,
+        organization_repos=organization_repos,
     )
 
 
@@ -108,8 +112,13 @@ def get_identity_service(
 def get_auth_service(
     user_repos: UserRepository = Depends(get_user_repository),
     access_token_repos: AccessTokenRepository = Depends(get_access_token_repository),
+    organization_repos: OrganizationRepository = Depends(get_organization_repository),
 ) -> AuthService:
-    return AuthService(user_repos=user_repos, access_token_repos=access_token_repos)
+    return AuthService(
+        user_repos=user_repos,
+        access_token_repos=access_token_repos,
+        organization_repos=organization_repos,
+    )
 
 
 def get_role_service(
