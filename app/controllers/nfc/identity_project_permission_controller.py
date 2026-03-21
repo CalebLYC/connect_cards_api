@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
+from fastapi import APIRouter, Depends, status, Query, BackgroundTasks, Path
 from typing import List
 import uuid
 
@@ -19,7 +19,7 @@ from app.providers.auth_provider import require_role, require_permission
 router = APIRouter(
     prefix="/identity-project-permissions",
     tags=["Identity Project Permissions"],
-    dependencies=[require_permission("project:permission:manage", verify_org=True)],
+    # dependencies=[require_permission("project:permission:manage", verify_org=True)],
     responses=http_status.router_responses,
 )
 
@@ -42,19 +42,21 @@ async def list_permissions(
 
 
 @router.get(
-    "/{id}",
+    "/{identity_project_permission_id}",
     response_model=IdentityProjectPermissionReadSchema,
     summary="Get permission by ID",
+    dependencies=[require_permission("project:permission:read", verify_org=True)],
 )
-async def get_permission(
-    id: str = Path(..., min_length=24, max_length=36),
+async def get_identity_project_permission(
+    identity_project_permission_id: str = Path(..., min_length=24, max_length=36),
     eager: bool = Query(True),
     service: IdentityProjectPermissionService = Depends(
         get_identity_project_permission_service
     ),
-    dependencies=[require_role("admin")],
 ):
-    return await service.get_permission(id, eager=eager)
+    return await service.get_identity_project_permission(
+        identity_project_permission_id, eager=eager
+    )
 
 
 @router.post(
@@ -62,6 +64,7 @@ async def get_permission(
     response_model=LazyIdentityProjectPermissionReadSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Create permission",
+    dependencies=[require_role("admin")],
 )
 async def create_permission(
     permission_create: IdentityProjectPermissionCreateSchema,
@@ -76,38 +79,42 @@ async def create_permission(
 
 
 @router.put(
-    "/{id}",
+    "/{identity_project_permission_id}",
     response_model=LazyIdentityProjectPermissionReadSchema,
     summary="Update permission",
     dependencies=[require_role("admin")],
 )
-async def update_permission(
-    id: str = Path(..., min_length=24, max_length=36),
+async def update_identity_project_permission(
+    identity_project_permission_id: str = Path(..., min_length=24, max_length=36),
     permission_update: IdentityProjectPermissionUpdateSchema = ...,
     service: IdentityProjectPermissionService = Depends(
         get_identity_project_permission_service
     ),
     background_tasks: BackgroundTasks = None,
 ):
-    return await service.update_permission(
-        id, permission_update, background_tasks=background_tasks
+    return await service.update_identity_project_permission(
+        identity_project_permission_id,
+        permission_update,
+        background_tasks=background_tasks,
     )
 
 
 @router.delete(
-    "/{id}",
+    "/{identity_project_permission_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete permission",
     dependencies=[require_role("admin")],
 )
-async def delete_permission(
-    id: str = Path(..., min_length=24, max_length=36),
+async def delete_identity_project_permission(
+    identity_project_permission_id: str = Path(..., min_length=24, max_length=36),
     service: IdentityProjectPermissionService = Depends(
         get_identity_project_permission_service
     ),
     background_tasks: BackgroundTasks = None,
 ):
-    await service.delete_permission(id, background_tasks=background_tasks)
+    await service.delete_identity_project_permission(
+        identity_project_permission_id, background_tasks=background_tasks
+    )
     return {"detail": "Permission deleted"}
 
 
@@ -130,6 +137,7 @@ async def delete_all_permissions(
     "/disallow",
     response_model=LazyIdentityProjectPermissionReadSchema,
     summary="Disallow identity from project",
+    dependencies=[require_permission("project:permission:manage", verify_org=True)],
 )
 async def disallow_identity(
     identity_id: uuid.UUID = Query(...),
@@ -151,6 +159,7 @@ async def disallow_identity(
     "/allow",
     response_model=LazyIdentityProjectPermissionReadSchema,
     summary="Allow identity for project",
+    dependencies=[require_permission("project:permission:manage", verify_org=True)],
 )
 async def allow_identity(
     identity_id: uuid.UUID = Query(...),

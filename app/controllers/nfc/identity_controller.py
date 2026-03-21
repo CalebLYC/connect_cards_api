@@ -1,4 +1,11 @@
-from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
+from fastapi import (
+    APIRouter,
+    Depends,
+    status,
+    Query,
+    BackgroundTasks,
+    Path,
+)
 from typing import List
 
 from app.providers.auth_provider import require_permission, require_role
@@ -36,13 +43,13 @@ async def list_identities(
     return await service.list_identitys(skip=skip, limit=limit, all=all, eager=eager)
 
 
-@router.get("/{id}", response_model=IdentityReadSchema, summary="Get identity by ID")
+@router.get("/{identity_id}", response_model=IdentityReadSchema, summary="Get identity by ID")
 async def get_identity(
-    id: str = Path(..., min_length=24, max_length=36),
+    identity_id: str = Path(..., min_length=24, max_length=36),
     eager: bool = Query(True),
     service: IdentityService = Depends(get_identity_service),
 ):
-    return await service.get_identity(id, eager=eager)
+    return await service.get_identity(identity_id, eager=eager)
 
 
 @router.post(
@@ -61,27 +68,27 @@ async def create_identity(
     )
 
 
-@router.put("/{id}", response_model=LazyIdentityReadSchema, summary="Update identity")
+@router.put("/{identity_id}", response_model=LazyIdentityReadSchema, summary="Update identity")
 async def update_identity(
-    id: str = Path(..., min_length=24, max_length=36),
+    identity_id: str = Path(..., min_length=24, max_length=36),
     identity_update: IdentityUpdateSchema = ...,
     service: IdentityService = Depends(get_identity_service),
     background_tasks: BackgroundTasks = None,
 ):
     return await service.update_identity(
-        id, identity_update, background_tasks=background_tasks
+        identity_id, identity_update, background_tasks=background_tasks
     )
 
 
 @router.delete(
-    "/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete identity"
+    "/{identity_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete identity"
 )
 async def delete_identity(
-    id: str = Path(..., min_length=24, max_length=36),
+    identity_id: str = Path(..., min_length=24, max_length=36),
     service: IdentityService = Depends(get_identity_service),
     background_tasks: BackgroundTasks = None,
 ):
-    await service.delete_identity(id, background_tasks=background_tasks)
+    await service.delete_identity(identity_id, background_tasks=background_tasks)
     return {"detail": "Identity deleted"}
 
 

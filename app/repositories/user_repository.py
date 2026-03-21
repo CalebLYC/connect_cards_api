@@ -11,7 +11,6 @@ class UserRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-
     async def find_by_id(self, id: str):
         stmt = (
             select(User)
@@ -23,39 +22,37 @@ class UserRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-
     async def find_by_email(self, email: str) -> Optional[User]:
         stmt = (
             select(User)
-            #.options(selectinload(User.roles))
-            #.options(selectinload(User.permissions))
+            # .options(selectinload(User.roles))
+            # .options(selectinload(User.permissions))
             .where(User.email == email)
         )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
-    
-    
-    async def find_by_email_with_roles_and_permissions(self, email: str) -> Optional[User]:
+
+    async def find_by_email_with_roles_and_permissions(
+        self, email: str
+    ) -> Optional[User]:
         stmt = (
             select(User)
             .options(selectinload(User.roles).selectinload(Role.permissions))
             .options(selectinload(User.permissions))
+            .options(selectinload(User.organization))
             .where(User.email == email)
         )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
-    
-    
+
     async def find_by_phone_number(self, phone_number: str) -> Optional[User]:
         stmt = (
-            select(User)
-            .options(selectinload(User.roles))
-            #.options(selectinload(User.permissions))
+            select(User).options(selectinload(User.roles))
+            # .options(selectinload(User.permissions))
             .where(User.phone_number == phone_number)
         )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
-
 
     async def list_users(
         self,
@@ -69,13 +66,12 @@ class UserRepository:
             .options(selectinload(User.permissions))
             .options(selectinload(User.organization))
         )
-        
+
         if not all:
             stmt = stmt.offset(skip).limit(limit)
-            
+
         result = await self.db.execute(stmt)
         return result.scalars().all()
-
 
     async def create(self, user: User) -> User:
         self.db.add(user)
@@ -83,12 +79,10 @@ class UserRepository:
         await self.db.refresh(user)
         return user
 
-
     async def update(self, user: User) -> User:
         await self.db.commit()
         await self.db.refresh(user)
         return user
-
 
     async def delete(self, user: User) -> None:
         await self.db.delete(user)

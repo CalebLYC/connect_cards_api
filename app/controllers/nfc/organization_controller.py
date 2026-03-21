@@ -36,14 +36,16 @@ async def list_organizations(
 
 
 @router.get(
-    "/{id}", response_model=OrganizationReadSchema, summary="Get organization by ID"
+    "/{organization_id}",
+    response_model=OrganizationReadSchema,
+    summary="Get organization by ID",
 )
 async def get_organization(
-    id: str = Path(..., min_length=24, max_length=36),
+    organization_id: str = Path(..., min_length=24, max_length=36),
     eager: bool = Query(True),
     service: OrganizationService = Depends(get_organization_service),
 ):
-    return await service.get_organization(id, eager=eager)
+    return await service.get_organization(organization_id, eager=eager)
 
 
 @router.post(
@@ -61,24 +63,28 @@ async def create_organization(
 
 
 @router.put(
-    "/{id}", response_model=LazyOrganizationReadSchema, summary="Update organization"
+    "/{organization_id}",
+    response_model=LazyOrganizationReadSchema,
+    summary="Update organization",
 )
 async def update_organization(
-    id: str = Path(..., min_length=24, max_length=36),
+    organization_id: str = Path(..., min_length=24, max_length=36),
     organization_update: OrganizationUpdateSchema = ...,
     service: OrganizationService = Depends(get_organization_service),
 ):
-    return await service.update_organization(id, organization_update)
+    return await service.update_organization(organization_id, organization_update)
 
 
 @router.delete(
-    "/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete organization"
+    "/{organization_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete organization",
 )
 async def delete_organization(
-    id: str = Path(..., min_length=24, max_length=36),
+    organization_id: str = Path(..., min_length=24, max_length=36),
     service: OrganizationService = Depends(get_organization_service),
 ):
-    await service.delete_organization(id)
+    await service.delete_organization(organization_id)
     return {"detail": "Organization deleted"}
 
 

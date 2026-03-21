@@ -50,15 +50,12 @@ class OrganizationRepository:
     async def find_many_eager(
         self, filters: dict = None, skip: int = 0, limit: int = 100
     ) -> List[Organization]:
-        stmt = (
-            select(Organization)
-            .options(
-                # selectinload(Organization.memberships),
-                selectinload(Organization.projects),
-                selectinload(Organization.readers),
-                selectinload(Organization.users),
-                selectinload(Organization.issued_cards),
-            )
+        stmt = select(Organization).options(
+            # selectinload(Organization.memberships),
+            selectinload(Organization.projects),
+            selectinload(Organization.readers),
+            selectinload(Organization.users),
+            selectinload(Organization.issued_cards),
         )
         if filters:
             for key, value in filters.items():
@@ -95,7 +92,9 @@ class OrganizationRepository:
         await self.db.refresh(organization)
         return organization
 
-    async def create_many(self, organizations: List[Organization]) -> List[Organization]:
+    async def create_many(
+        self, organizations: List[Organization]
+    ) -> List[Organization]:
         self.db.add_all(organizations)
         await self.db.commit()
         for organization in organizations:

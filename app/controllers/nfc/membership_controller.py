@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
 from typing import List
+from fastapi import APIRouter, Depends, status, Query, Path
 
 from app.providers.auth_provider import require_permission, require_role
 from app.providers.service_providers import get_membership_service
@@ -26,20 +26,19 @@ async def list_memberships(
     limit: int = Query(100, ge=1, le=1000),
     eager: bool = Query(True),
     service: MembershipService = Depends(get_membership_service),
-    dependencies=[require_role("admin")],
 ):
     return await service.list_memberships(skip=skip, limit=limit, eager=eager)
 
 
 @router.get(
-    "/{id}", response_model=MembershipReadSchema, summary="Get membership by ID"
+    "/{membership_id}", response_model=MembershipReadSchema, summary="Get membership by ID"
 )
 async def get_membership(
-    id: str = Path(..., min_length=24, max_length=36),
+    membership_id: str = Path(..., min_length=24, max_length=36),
     eager: bool = Query(True),
     service: MembershipService = Depends(get_membership_service),
 ):
-    return await service.get_membership(id, eager=eager)
+    return await service.get_membership(membership_id, eager=eager)
 
 
 @router.post(
@@ -51,39 +50,31 @@ async def get_membership(
 async def create_membership(
     membership_create: MembershipCreateSchema,
     service: MembershipService = Depends(get_membership_service),
-    background_tasks: BackgroundTasks = None,
 ):
-    return await service.create_membership(
-        membership_create, background_tasks=background_tasks
-    )
+    return await service.create_membership(membership_create)
 
 
 @router.put(
-    "/{id}", response_model=LazyMembershipReadSchema, summary="Update membership"
+    "/{membership_id}",
+    response_model=LazyMembershipReadSchema,
+    summary="Update membership",
 )
 async def update_membership(
-    id: str = Path(..., min_length=24, max_length=36),
+    membership_id: str = Path(..., min_length=24, max_length=36),
     membership_update: MembershipUpdateSchema = ...,
     service: MembershipService = Depends(get_membership_service),
-    background_tasks: BackgroundTasks = None,
 ):
-    return await service.update_membership(
-        id, membership_update, background_tasks=background_tasks
-    )
+    return await service.update_membership(membership_id, membership_update)
 
 
 @router.delete(
-    "/{id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete membership",
-    # dependencies=[require_role("admin")],
+    "/{membership_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete membership"
 )
 async def delete_membership(
-    id: str = Path(..., min_length=24, max_length=36),
+    membership_id: str = Path(..., min_length=24, max_length=36),
     service: MembershipService = Depends(get_membership_service),
-    background_tasks: BackgroundTasks = None,
 ):
-    await service.delete_membership(id, background_tasks=background_tasks)
+    await service.delete_membership(membership_id)
     return {"detail": "Membership deleted"}
 
 

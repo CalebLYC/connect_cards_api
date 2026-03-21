@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
+from fastapi import APIRouter, Depends, status, Query, BackgroundTasks, Path
 from typing import List
 
 from app.providers.auth_provider import require_permission, require_role
@@ -35,13 +35,13 @@ async def list_readers(
     return await service.list_readers(skip=skip, limit=limit, eager=eager)
 
 
-@router.get("/{id}", response_model=ReaderReadSchema, summary="Get reader by ID")
+@router.get("/{reader_id}", response_model=ReaderReadSchema, summary="Get reader by ID")
 async def get_reader(
-    id: str = Path(..., min_length=24, max_length=36),
+    reader_id: str = Path(..., min_length=24, max_length=36),
     eager: bool = Query(True),
     service: ReaderService = Depends(get_reader_service),
 ):
-    return await service.get_reader(id, eager=eager)
+    return await service.get_reader(reader_id, eager=eager)
 
 
 @router.post(
@@ -58,25 +58,25 @@ async def create_reader(
     return await service.create_reader(reader_create, background_tasks=background_tasks)
 
 
-@router.put("/{id}", response_model=LazyReaderReadSchema, summary="Update reader")
+@router.put("/{reader_id}", response_model=LazyReaderReadSchema, summary="Update reader")
 async def update_reader(
-    id: str = Path(..., min_length=24, max_length=36),
+    reader_id: str = Path(..., min_length=24, max_length=36),
     reader_update: ReaderUpdateSchema = ...,
     service: ReaderService = Depends(get_reader_service),
     background_tasks: BackgroundTasks = None,
 ):
     return await service.update_reader(
-        id, reader_update, background_tasks=background_tasks
+        reader_id, reader_update, background_tasks=background_tasks
     )
 
 
-@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete reader")
+@router.delete("/{reader_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete reader")
 async def delete_reader(
-    id: str = Path(..., min_length=24, max_length=36),
+    reader_id: str = Path(..., min_length=24, max_length=36),
     service: ReaderService = Depends(get_reader_service),
     background_tasks: BackgroundTasks = None,
 ):
-    await service.delete_reader(id, background_tasks=background_tasks)
+    await service.delete_reader(reader_id, background_tasks=background_tasks)
     return {"detail": "Reader deleted"}
 
 

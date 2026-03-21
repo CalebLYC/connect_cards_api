@@ -126,7 +126,7 @@ class UserUpdateSchema(BaseModel):
 
 from app.schemas.organization_schema import LazyOrganizationReadSchema
 from app.schemas.permission_schema import PermissionReadSchema
-from app.schemas.role_schema import RoleReadSchema
+from app.schemas.role_schema import LazyRoleReadSchema
 
 
 class UserReadSchema(BaseModel):
@@ -154,7 +154,7 @@ class UserReadSchema(BaseModel):
     organization_id: Optional[UUID] = Field(
         default=None, example="d290f1ee-6c54-4b01-90e6-d701748f0851"
     )
-    roles: List[RoleReadSchema] = Field(default_factory=list)
+    roles: List[LazyRoleReadSchema] = Field(default_factory=list)
     permissions: List[PermissionReadSchema] = Field(default_factory=list)
     organization: Optional[LazyOrganizationReadSchema] = Field(default=None)
 

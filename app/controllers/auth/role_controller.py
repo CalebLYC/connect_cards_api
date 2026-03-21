@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Path, status
+from fastapi import APIRouter, Depends, Query, status, Path
 from typing import List
 from app.providers.auth_provider import require_role
 from app.providers.service_providers import get_role_service
@@ -86,36 +86,36 @@ async def create_role(
     return await service.create_role(role_create)
 
 
-@router.put("/{id}", response_model=LazyRoleReadSchema, summary="Update a role by ID")
+@router.put("/{role_id}", response_model=LazyRoleReadSchema, summary="Update a role by ID")
 async def update_role(
-    id: str = Path(..., min_length=24, max_length=36),
+    role_id: str = Path(..., min_length=24, max_length=36),
     role_update: RoleUpdateSchema = ...,
     service: RoleService = Depends(get_role_service),
 ):
     """Update a role by its ID.
 
     Args:
-        id (str, optional): The ID of the role to update. Must be a valid length.
+        role_id (str, optional): The ID of the role to update. Must be a valid length.
         role_update (RoleUpdateSchema, optional): The role data to update, validated against the RoleUpdateSchema.
         service (RoleService, optional): Role service dependency.
 
     Returns:
         RoleReadSchema: The updated role's data validated against the RoleReadSchema.
     """
-    return await service.update_role(id, role_update)
+    return await service.update_role(role_id, role_update)
 
 
 @router.delete(
-    "/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a role by ID"
+    "/{role_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a role by ID"
 )
 async def delete_role(
-    id: str = Path(..., min_length=24, max_length=36),
+    role_id: str = Path(..., min_length=24, max_length=36),
     service: RoleService = Depends(get_role_service),
 ):
     """Delete a role by its ID.
 
     Args:
-        id (str, optional): The ID of the role to delete. Must be a valid length.
+        role_id (str, optional): The ID of the role to delete. Must be a valid length.
         service (RoleService, optional): Role service dependency.
 
     Returns:

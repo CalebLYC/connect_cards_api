@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Path, status
+from fastapi import APIRouter, Depends, status, Query, Path
 from typing import List
 
 from app.providers.auth_provider import require_permission, require_role
@@ -35,13 +35,15 @@ async def list_projects(
     return await service.list_projects(skip=skip, limit=limit, eager=eager)
 
 
-@router.get("/{id}", response_model=ProjectReadSchema, summary="Get project by ID")
+@router.get(
+    "/{project_id}", response_model=ProjectReadSchema, summary="Get project by ID"
+)
 async def get_project(
-    id: str = Path(..., min_length=24, max_length=36),
+    project_id: str = Path(..., min_length=24, max_length=36),
     eager: bool = Query(True),
     service: ProjectService = Depends(get_project_service),
 ):
-    return await service.get_project(id, eager=eager)
+    return await service.get_project(project_id, eager=eager)
 
 
 @router.post(
@@ -57,23 +59,25 @@ async def create_project(
     return await service.create_project(project_create)
 
 
-@router.put("/{id}", response_model=LazyProjectReadSchema, summary="Update project")
+@router.put(
+    "/{project_id}", response_model=LazyProjectReadSchema, summary="Update project"
+)
 async def update_project(
-    id: str = Path(..., min_length=24, max_length=36),
+    project_id: str = Path(..., min_length=24, max_length=36),
     project_update: ProjectUpdateSchema = ...,
     service: ProjectService = Depends(get_project_service),
 ):
-    return await service.update_project(id, project_update)
+    return await service.update_project(project_id, project_update)
 
 
 @router.delete(
-    "/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete project"
+    "/{project_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete project"
 )
 async def delete_project(
-    id: str = Path(..., min_length=24, max_length=36),
+    project_id: str = Path(..., min_length=24, max_length=36),
     service: ProjectService = Depends(get_project_service),
 ):
-    await service.delete_project(id)
+    await service.delete_project(project_id)
     return {"detail": "Project deleted"}
 
 

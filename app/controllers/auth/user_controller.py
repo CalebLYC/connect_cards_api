@@ -1,4 +1,4 @@
-from fastapi import APIRouter,  Depends, Query, Path, status
+from fastapi import APIRouter, Depends, Query, Path, status
 from typing import List
 from app.models.user import User
 from app.providers.auth_provider import auth_middleware, require_permission
@@ -59,15 +59,15 @@ async def get_current_user(
     return UserReadSchema.model_validate(current_user)
 
 
-@router.get("/{id}", response_model=UserReadSchema, summary="Get a user by ID")
+@router.get("/{user_id}", response_model=UserReadSchema, summary="Get a user by ID")
 async def get_user(
-    id: str = Path(..., min_length=24, max_length=36),
+    user_id: str = Path(..., min_length=24, max_length=36),
     service: UserService = Depends(get_user_service),
 ):
     """Get a user by its ID.
 
     Args:
-        id (str, optional): The ID of the user to retrieve. Must be a valid length.
+        user_id (str, optional): The ID of the user to retrieve. Must be a valid length.
         service (UserService, optional): User service dependency.
 
     Raises:
@@ -76,7 +76,7 @@ async def get_user(
     Returns:
         UserReadSchema: The user's data validated against the UserReadSchema.
     """
-    return await service.get_user(id)
+    return await service.get_user(user_id)
 
 
 @router.post(
@@ -101,36 +101,36 @@ async def create_user(
     return await service.create_user(user_create)
 
 
-@router.put("/{id}", response_model=LazyUserReadSchema, summary="Update a user by ID")
+@router.put("/{user_id}", response_model=LazyUserReadSchema, summary="Update a user by ID")
 async def update_user(
-    id: str = Path(..., min_length=24, max_length=36),
+    user_id: str = Path(..., min_length=24, max_length=36),
     user_update: UserUpdateSchema = ...,
     service: UserService = Depends(get_user_service),
 ):
     """Update a user by its ID.
 
     Args:
-        id (str, optional): The ID of the user to update. Must be a valid length.
+        user_id (str, optional): The ID of the user to update. Must be a valid length.
         user_update (UserUpdateSchema, optional): The user data to update, validated against the UserUpdateSchema.
         service (UserService, optional): User service dependency.
 
     Returns:
         UserReadSchema: The updated user's data validated against the UserReadSchema.
     """
-    return await service.update_user(id, user_update)
+    return await service.update_user(user_id, user_update)
 
 
 @router.delete(
-    "/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a user by ID"
+    "/{user_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a user by ID"
 )
 async def delete_user(
-    id: str = Path(..., min_length=24, max_length=36),
+    user_id: str = Path(..., min_length=24, max_length=36),
     service: UserService = Depends(get_user_service),
 ):
     """Delete a user by its ID.
 
     Args:
-        id (str, optional): The ID of the user to delete. Must be a valid length.
+        user_id (str, optional): The ID of the user to delete. Must be a valid length.
         service (UserService, optional): User service dependency.
 
     Returns:

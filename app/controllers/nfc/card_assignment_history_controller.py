@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Path, status
+from fastapi import APIRouter, Depends, status, Query, Path
 from typing import List
 
 from app.providers.auth_provider import require_permission, require_role
@@ -72,34 +72,34 @@ async def create_history(
 
 
 @router.put(
-    "/{id}",
+    "/{card_assignment_history_id}",
     response_model=LazyCardAssignmentHistoryReadSchema,
     summary="Update history record",
     dependencies=[require_role("superadmin")],
 )
 async def update_history(
-    id: str = Path(..., min_length=24, max_length=36),
+    card_assignment_history_id: str = Path(..., min_length=24, max_length=36),
     history_update: CardAssignmentHistoryUpdateSchema = ...,
     service: CardAssignmentHistoryService = Depends(
         get_card_assignment_history_service
     ),
 ):
-    return await service.update_history(id, history_update)
+    return await service.update_history(card_assignment_history_id, history_update)
 
 
 @router.delete(
-    "/{id}",
+    "/{card_assignment_history_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete history record",
     dependencies=[require_role("superadmin")],
 )
 async def delete_history(
-    id: str = Path(..., min_length=24, max_length=36),
+    card_assignment_history_id: str = Path(..., min_length=24, max_length=36),
     service: CardAssignmentHistoryService = Depends(
         get_card_assignment_history_service
     ),
 ):
-    await service.delete_history(id)
+    await service.delete_history(card_assignment_history_id)
     return {"detail": "History record deleted"}
 
 

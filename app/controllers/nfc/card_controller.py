@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, Query, Path, status, BackgroundTasks
 from typing import List
 from uuid import UUID
+from fastapi import APIRouter, Depends, status, Query, BackgroundTasks, Path
 
 from app.providers.auth_provider import require_permission, require_role
 from app.providers.service_providers import get_card_service
@@ -40,17 +40,17 @@ async def list_cards(
 
 
 @router.get(
-    "/{id}",
+    "/{card_id}",
     response_model=CardReadSchema,
     summary="Get card by ID",
     dependencies=[require_permission("card:manage", verify_org=True)],
 )
 async def get_card(
-    id: str = Path(..., min_length=24, max_length=36),
+    card_id: str = Path(..., min_length=24, max_length=36),
     eager: bool = Query(True),
     service: CardService = Depends(get_card_service),
 ):
-    return await service.get_card(id, eager=eager)
+    return await service.get_card(card_id, eager=eager)
 
 
 @router.get(
@@ -148,13 +148,13 @@ async def create_card(
 
 
 @router.put(
-    "/{id}",
+    "/{card_id}",
     response_model=LazyCardReadSchema,
     summary="Update card",
     dependencies=[require_permission("card:manage", verify_org=True)],
 )
 async def update_card(
-    id: str = Path(..., min_length=24, max_length=36),
+    card_id: str = Path(..., min_length=24, max_length=36),
     card_update: CardUpdateSchema = ...,
     service: CardService = Depends(get_card_service),
     background_tasks: BackgroundTasks = None,
@@ -162,21 +162,22 @@ async def update_card(
     """
     Update an NFC card's information.
     """
-    return await service.update_card(id, card_update, background_tasks=background_tasks)
+    return await service.update_card(
+        card_id, card_update, background_tasks=background_tasks
+    )
 
 
 @router.delete(
-    "/{id}",
+    "/{card_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete card",
     dependencies=[require_permission("card:manage", verify_org=True)],
 )
 async def delete_card(
-    id: str = Path(..., min_length=24, max_length=36),
-    background_tasks: BackgroundTasks = None,
+    card_id: str = Path(..., min_length=24, max_length=36),
     service: CardService = Depends(get_card_service),
 ):
-    await service.delete_card(id, background_tasks=background_tasks)
+    await service.delete_card(card_id)
     return {"detail": "Card deleted"}
 
 

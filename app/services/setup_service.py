@@ -92,37 +92,112 @@ class SetupService:
             dict: Success message.
         """
         # Create default roles if they don't exist
-        roles = [
+        roles_data = [
             {
                 "name": "superadmin",
                 "description": "Superadmin role with all permissions",
             },
             {"name": "admin", "description": "Admin role with elevated permissions"},
             {
+                "name": "organization_admin",
+                "description": "Organization Admin role with permissions for their organization",
+            },
+            {
                 "name": "user",
                 "description": "Regular user role with limited permissions",
             },
         ]
-        for role_data in roles:
-            role = await self.role_repos.find_by_name(role_data["name"])
-            if not role:
-                await self.role_repos.create(Role(**role_data))
 
-        # Create default permissions if they don't exist
-        permissions = [
-            {"code": "roles:manage", "description": "Permission to manage roles"},
-            {"code": "admin:manage", "description": "Permission to manage admin users"},
-            {
-                "code": "user:manage",
-                "description": "Permission to manage regular users",
-            },
+        db_roles = {}
+        for role_item in roles_data:
+            role = await self.role_repos.find_by_name(role_item["name"])
+            if not role:
+                role = await self.role_repos.create(Role(**role_item))
+            db_roles[role_item["name"]] = role
+
+        # Define resources and actions for permissions
+        resources = [
+            "role",
+            "permission",
+            "user",
+            "organization",
+            "project",
+            "card",
+            "reader",
+            "identity",
+            "membership",
+            "event",
+            "webhook",
+            "card_assignment_history",
+            "identity_project_permission",
         ]
-        for permission_data in permissions:
+        actions = ["manage", "read", "create", "update", "delete"]
+
+        permissions_data = []
+        for resource in resources:
+            for action in actions:
+                permissions_data.append(
+                    {
+                        "code": f"{resource}:{action}",
+                        "description": f"Permission to {action} {resource.replace('_', ' ')}s",
+                    }
+                )
+
+        # Add special permissions
+        special_permissions = [
+            {
+                "code": "organization:own",
+                "description": "Permission to manage own organization",
+            },
+            {"code": "admin:manage", "description": "Permission to manage admin users"},
+        ]
+        permissions_data.extend(special_permissions)
+
+        all_permissions = []
+        for permission_item in permissions_data:
             permission = await self.permission_repos.find_by_code(
-                permission_data["code"]
+                permission_item["code"]
             )
             if not permission:
-                await self.permission_repos.create(Permission(**permission_data))
+                permission = await self.permission_repos.create(
+                    Permission(**permission_item)
+                )
+            all_permissions.append(permission)
+
+        # Assign permissions to admin and organization_admin roles with specific exclusions
+        # admin excludes: webhook:*, admin:manage, card_assignment_history:*, event:*, identity_project_permission:*
+        admin_excludes = [
+            "webhook",
+            "admin:manage",
+            "card_assignment_history",
+            "event",
+            "identity_project_permission",
+        ]
+
+        # organization_admin excludes: admin:manage, card_assignment_history:*, event:*
+        org_admin_excludes = ["admin:manage", "card_assignment_history", "event"]
+
+        for role_name in ["admin", "organization_admin"]:
+            role = db_roles.get(role_name)
+            if role:
+                role.permissions = []
+                excludes = (
+                    admin_excludes if role_name == "admin" else org_admin_excludes
+                )
+
+                for perm in all_permissions:
+                    is_excluded = False
+                    for ex in excludes:
+                        # If the exclusion is a resource name (like 'webhook'), exclude its actions except 'read'
+                        if perm.code == ex or perm.code.startswith(f"{ex}:"):
+                            if not perm.code.endswith(":read"):
+                                is_excluded = True
+                                break
+
+                    if not is_excluded:
+                        role.permissions.append(perm)
+
+                await self.role_repos.update(role)
 
         return {"message": "Roles and permissions setup successfully."}
 

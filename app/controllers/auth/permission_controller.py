@@ -1,5 +1,5 @@
 # app/controllers/auth/permission_controller.py
-from fastapi import APIRouter, Depends, Query, Path, status
+from fastapi import APIRouter, Depends, Query, status, Path
 from typing import List
 from app.providers.auth_provider import require_role
 from app.providers.service_providers import get_permission_service
@@ -34,13 +34,13 @@ async def list_permissions(
     return await service.list_permissions(skip=skip, limit=limit, all=all)
 
 
-@router.get("/{id}", response_model=PermissionReadSchema, summary="Get a permission by ID")
-async def get_permission(
-    id: str = Path(..., min_length=24, max_length=36),
+@router.get("/{permission_id}", response_model=PermissionReadSchema, summary="Get a permission by ID")
+async def get_permission_by_id(
+    permission_id: str = Path(..., min_length=24, max_length=36),
     service: PermissionService = Depends(get_permission_service),
 ):
     """Get a permission by its ID."""
-    return await service.get_permission(id)
+    return await service.get_permission_by_id(permission_id)
 
 
 @router.post(
@@ -57,25 +57,25 @@ async def create_permission(
     return await service.create_permission(permission_create)
 
 
-@router.put("/{id}", response_model=PermissionReadSchema, summary="Update a permission by ID")
+@router.put("/{permission_id}", response_model=PermissionReadSchema, summary="Update a permission by ID")
 async def update_permission(
-    id: str = Path(..., min_length=24, max_length=36),
+    permission_id: str = Path(..., min_length=24, max_length=36),
     permission_update: PermissionUpdateSchema = ...,
     service: PermissionService = Depends(get_permission_service),
 ):
     """Update a permission by its ID."""
-    return await service.update_permission(id, permission_update)
+    return await service.update_permission(permission_id, permission_update)
 
 
 @router.delete(
-    "/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a permission by ID"
+    "/{permission_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a permission by ID"
 )
 async def delete_permission(
-    id: str = Path(..., min_length=24, max_length=36),
+    permission_id: str = Path(..., min_length=24, max_length=36),
     service: PermissionService = Depends(get_permission_service),
 ):
     """Delete a permission by its ID."""
-    await service.delete_permission(id)
+    await service.delete_permission(id=permission_id)
     return {"detail": "Permission deleted"}
 
 

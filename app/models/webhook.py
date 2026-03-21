@@ -18,6 +18,7 @@ class Webhook(Base):
     is_active = Column(Boolean, default=True)
     secret = Column(String(100), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     def __repr__(self):
         return f"<Webhook(id={self.id}, url={self.url}, event_type={self.event_type}, is_active={self.is_active})>"
