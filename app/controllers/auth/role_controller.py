@@ -2,14 +2,19 @@ from fastapi import APIRouter, Depends, Query, status, Path
 from typing import List
 from app.providers.auth_provider import require_role
 from app.providers.service_providers import get_role_service
-from app.schemas.role_schema import LazyRoleReadSchema, RoleCreateSchema, RoleReadSchema, RoleUpdateSchema
+from app.schemas.role_schema import (
+    LazyRoleReadSchema,
+    RoleCreateSchema,
+    RoleReadSchema,
+    RoleUpdateSchema,
+)
 from app.services.auth.role_service import RoleService
 from app.utils.constants import http_status
 
 router = APIRouter(
     prefix="/roles",
     tags=["Roles"],
-    dependencies=[require_role("superadmin")],
+    dependencies=[require_role("admin")],
     responses=http_status.router_responses,
 )
 
@@ -18,7 +23,7 @@ router = APIRouter(
     "/",
     response_model=List[RoleReadSchema],
     summary="List roles",
-    #dependencies=[require_role("admin")],
+    # dependencies=[require_role("admin")],
 )
 async def list_roles(
     skip: int = Query(0, ge=0),
@@ -41,9 +46,10 @@ async def list_roles(
 
 
 @router.get(
-    "/{id}", response_model=RoleReadSchema,
+    "/{id}",
+    response_model=RoleReadSchema,
     summary="Get a role by ID",
-    #dependencies=[require_permission("user:read")],
+    # dependencies=[require_permission("user:read")],
 )
 async def get_role(
     id: str = Path(..., min_length=24, max_length=36),
@@ -86,7 +92,9 @@ async def create_role(
     return await service.create_role(role_create)
 
 
-@router.put("/{role_id}", response_model=LazyRoleReadSchema, summary="Update a role by ID")
+@router.put(
+    "/{role_id}", response_model=LazyRoleReadSchema, summary="Update a role by ID"
+)
 async def update_role(
     role_id: str = Path(..., min_length=24, max_length=36),
     role_update: RoleUpdateSchema = ...,
@@ -125,7 +133,12 @@ async def delete_role(
     return {"detail": "Role deleted"}
 
 
-@router.delete("/", status_code=status.HTTP_204_NO_CONTENT, summary="Delete all roles")
+@router.delete(
+    "/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete all roles",
+    dependencies=[require_role("superadmin")],
+)
 async def delete_all_roles(
     service: RoleService = Depends(get_role_service),
 ):
@@ -138,12 +151,13 @@ async def delete_all_roles(
         Bool: A confirmation message indicating all roles were deleted.
     """
     await service.delete_all_roles()
-    
-    
+
+
 @router.patch(
     "/{id}/permissions",
     response_model=RoleReadSchema,
     summary="Add permissions to a role",
+    dependencies=[require_role("superadmin")],
 )
 async def add_permissions_to_role(
     id: str = Path(..., min_length=24, max_length=36),
@@ -167,6 +181,7 @@ async def add_permissions_to_role(
     "/{id}/permissions/remove",
     response_model=RoleReadSchema,
     summary="Remove permissions from a role",
+    dependencies=[require_role("superadmin")],
 )
 async def remove_permissions_from_role(
     id: str = Path(..., min_length=24, max_length=36),

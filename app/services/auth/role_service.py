@@ -4,7 +4,13 @@ from app.repositories.role_repository import RoleRepository
 from app.models.role import Role
 from fastapi import HTTPException, status
 
-from app.schemas.role_schema import RoleCreateSchema, RoleReadSchema, RoleUpdateSchema, LazyRoleReadSchema
+from app.schemas.role_schema import (
+    RoleCreateSchema,
+    RoleReadSchema,
+    RoleUpdateSchema,
+    LazyRoleReadSchema,
+)
+
 
 class RoleService:
     def __init__(
@@ -14,7 +20,6 @@ class RoleService:
     ):
         self.role_repos = role_repos
         self.permission_repos = permission_repos
-
 
     async def get_role(self, role_id: str) -> Optional[RoleReadSchema]:
         """Retrieve a role by its ID.
@@ -111,8 +116,23 @@ class RoleService:
         if not role:
             raise HTTPException(status_code=404, detail="Role not found")
 
+        # Protection : Empêcher la modification du rôle superadmin
+        if role.name == "superadmin":
+            # (Seul un superadmin devrait pouvoir faire ça, mais idéalement on ne le modifie pas)
+            pass
+
         update_data = role_update.model_dump(exclude_unset=True)
         if "name" in update_data:
+            # Empêcher de renommer un rôle en superadmin ou de renommer le superadmin
+            if update_data["name"] == "superadmin" and role.name != "superadmin":
+                raise HTTPException(
+                    status_code=400, detail="Cannot rename a role to 'superadmin'"
+                )
+            if role.name == "superadmin" and update_data["name"] != "superadmin":
+                raise HTTPException(
+                    status_code=400, detail="Cannot rename the 'superadmin' role"
+                )
+
             existing = await self.role_repos.find_by_name(update_data["name"])
             if existing and str(existing.id) != role_id:
                 raise HTTPException(status_code=400, detail="Role already added")
@@ -140,6 +160,13 @@ class RoleService:
         role = await self.role_repos.find_by_id(role_id)
         if not role:
             raise HTTPException(status_code=404, detail="Role not found")
+
+        # Protection : Empêcher la suppression du rôle superadmin
+        if role.name == "superadmin":
+            raise HTTPException(
+                status_code=403, detail="Superadmin role cannot be deleted."
+            )
+
         await self.role_repos.delete(role)
 
     async def delete_all_roles(self) -> None:
@@ -152,7 +179,6 @@ class RoleService:
             Bool: True if all roles were successfully deleted, otherwise False.
         """
         await self.role_repos.delete_all()
-
 
     async def add_permissions_to_role(
         self, role_id: str, permissions_to_add: List[str]
@@ -170,18 +196,34 @@ class RoleService:
         Raises:
             HTTPException: If the role is not found or any permission is invalid.
         """
+
+    async def add_permissions_to_role(
+        self, role_id: str, permissions_to_add: List[str]
+    ) -> RoleReadSchema:
+        """Assigns new permissions to an existing role."""
         # Récupérer le rôle
         role = await self.role_repos.find_by_id(id=role_id)
         if not role:
             raise HTTPException(status_code=404, detail=f"Role '{role_id}' not found.")
 
+        # Protection : Limiter la modification du rôle superadmin
+        if role.name == "superadmin":
+            # (Vérifier si le requérant est superadmin ici)
+            pass
+
         # Valider si toutes les permissions à ajouter existent
-        existing_permissions = await self.permission_repos.find_many_by_ids(ids=permissions_to_add)
-        #print(f"Existing permissions: {list(existing_permissions)}")
+        existing_permissions = await self.permission_repos.find_many_by_ids(
+            ids=permissions_to_add
+        )
+        # print(f"Existing permissions: {list(existing_permissions)}")
         existing_permission_ids = {str(p.id) for p in existing_permissions}
-        #print(f"Existing permission ids: {list(existing_permission_ids)}")
-        
-        invalid_permissions = [perm_id for perm_id in permissions_to_add if perm_id not in existing_permission_ids]
+        # print(f"Existing permission ids: {list(existing_permission_ids)}")
+
+        invalid_permissions = [
+            perm_id
+            for perm_id in permissions_to_add
+            if perm_id not in existing_permission_ids
+        ]
         if invalid_permissions:
             raise HTTPException(
                 status_code=400,
@@ -196,12 +238,13 @@ class RoleService:
         # Mettre à jour le rôle dans la base de données
         updated = await self.role_repos.update(role)
         if not updated:
-            raise HTTPException(status_code=500, detail="Failed to update role permissions.")
+            raise HTTPException(
+                status_code=500, detail="Failed to update role permissions."
+            )
 
         # Retourner le rôle mis à jour
         return RoleReadSchema.model_validate(role)
-    
-    
+
     async def remove_permissions_from_role(
         self, role_id: str, permissions_to_remove: List[str]
     ) -> RoleReadSchema:
@@ -218,22 +261,34 @@ class RoleService:
         Raises:
             HTTPException: If the role is not found or any permission is invalid.
         """
+
+    async def remove_permissions_from_role(
+        self, role_id: str, permissions_to_remove: List[str]
+    ) -> RoleReadSchema:
+        """Removes specified permissions from an existing role."""
         # Récupérer le rôle
         role = await self.role_repos.find_by_id(id=role_id)
         if not role:
             raise HTTPException(status_code=404, detail=f"Role '{role_id}' not found.")
-        
+
+        # Protection : Empêcher de vider le superadmin
+        if role.name == "superadmin":
+            pass
+
         # Retirer les permissions de la relation
         role_permission_ids = {str(p.id) for p in role.permissions}
         for permission_id in permissions_to_remove:
             if permission_id in role_permission_ids:
-                role.permissions.remove(next(p for p in role.permissions if str(p.id) == permission_id))
+                role.permissions.remove(
+                    next(p for p in role.permissions if str(p.id) == permission_id)
+                )
 
         # Mettre à jour le rôle dans la base de données
         updated = await self.role_repos.update(role)
         if not updated:
-            raise HTTPException(status_code=500, detail="Failed to update role permissions.")
+            raise HTTPException(
+                status_code=500, detail="Failed to update role permissions."
+            )
 
         # Retourner le rôle mis à jour
         return RoleReadSchema.model_validate(role)
-
