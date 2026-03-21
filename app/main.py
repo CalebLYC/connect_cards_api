@@ -23,6 +23,7 @@ from app.controllers.nfc import (
     identity_project_permission_controller,
     identity_controller,
     webhook_controller,
+    analytics_controller,
 )
 from app.core.config import Settings
 from app.providers.providers import get_settings
@@ -69,6 +70,7 @@ app.include_router(membership_controller.router)
 app.include_router(card_assignment_history_controller.router)
 app.include_router(identity_project_permission_controller.router)
 app.include_router(webhook_controller.router)
+app.include_router(analytics_controller.router)
 
 
 # Endpoint racine

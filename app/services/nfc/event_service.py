@@ -1,6 +1,9 @@
 from typing import Optional, List, Dict, Any
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select, func
+import datetime
+import uuid
 
 from app.models.event import Event
 from app.repositories.event_repository import EventRepository
@@ -11,6 +14,12 @@ from app.schemas.event_schema import (
     LazyEventReadSchema,
     EventCreateSchema,
     EventUpdateSchema,
+)
+from app.schemas.analytics_schema import (
+    DailyScanSchema,
+    TopCardSchema,
+    DenialRateSchema,
+    AnalyticsSummarySchema,
 )
 from fastapi import BackgroundTasks
 
@@ -65,7 +74,9 @@ class EventService:
         return [EventReadSchema.model_validate(e) for e in events]
 
     async def create_event(
-        self, event_create: EventCreateSchema, background_tasks: Optional[BackgroundTasks] = None
+        self,
+        event_create: EventCreateSchema,
+        background_tasks: Optional[BackgroundTasks] = None,
     ) -> LazyEventReadSchema:
         try:
             db_reader = await self.reader_repos.find_by_id(event_create.reader_id)
@@ -81,7 +92,7 @@ class EventService:
                 )
             event_model = Event(**event_create.model_dump())
             created = await self.event_repos.create(event_model)
-            
+
             if self.event_dispatcher and background_tasks:
                 await self.event_dispatcher.dispatch_event(created, background_tasks)
 
@@ -94,7 +105,10 @@ class EventService:
             )
 
     async def update_event(
-        self, event_id: str, event_update: EventUpdateSchema, background_tasks: Optional[BackgroundTasks] = None
+        self,
+        event_id: str,
+        event_update: EventUpdateSchema,
+        background_tasks: Optional[BackgroundTasks] = None,
     ) -> LazyEventReadSchema:
         try:
             event = await self.event_repos.find_by_id(event_id)
@@ -161,3 +175,46 @@ class EventService:
 
     async def delete_all_events(self) -> None:
         await self.event_repos.delete_all()
+
+    async def get_analytics(
+        self,
+        organization_id: Optional[Any] = None,
+        start_date: Optional[datetime.date] = None,
+        end_date: Optional[datetime.date] = None,
+    ) -> AnalyticsSummarySchema:
+        """Fetch and aggregate analytics for a specific organization or globally."""
+        daily_scans_data = await self.event_repos.get_scans_per_day(
+            organization_id, start_date, end_date
+        )
+        top_cards_data = await self.event_repos.get_most_used_cards(organization_id)
+        denial_metrics = await self.event_repos.get_denial_metrics(
+            organization_id, start_date, end_date
+        )
+
+        return AnalyticsSummarySchema(
+            organization_id=organization_id
+            or uuid.UUID(int=0),  # Placeholder for global
+            start_date=start_date or datetime.date.min,
+            end_date=end_date or datetime.date.max,
+            daily_scans=[
+                DailyScanSchema(day=row.day, count=row.count)
+                for row in daily_scans_data
+            ],
+            top_cards=[
+                TopCardSchema(
+                    card_id=row.card_id, count=row.count, card_name=row.card_name
+                )
+                for row in top_cards_data
+            ],
+            denial_metrics=DenialRateSchema(**denial_metrics),
+        )
+
+    async def get_system_health(self) -> Dict[str, Any]:
+        """Fetch global system health metrics."""
+        # Simple placeholder for now, could be expanded
+        return {
+            "total_events": await self.event_repos.db.scalar(
+                select(func.count(Event.id))
+            ),
+            "status": "healthy",
+        }
